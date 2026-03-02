@@ -30,7 +30,7 @@
         <!-- Table Card -->
         <div class="table-card">
           <div class="table-card-header">
-            <h2 class="table-card-title">Nama Jabatan</h2>
+            <h2 class="table-card-title">Daftar Jabatan</h2>
           </div>
 
           <table class="data-table">
@@ -83,7 +83,7 @@
     <!-- MODAL: Tambah / Edit -->
     <Teleport to="body">
       <div class="modal-overlay" v-if="showModal" @click.self="closeModal">
-        <div class="modal">
+        <div class="modal" @keydown.enter.prevent="saveData">
           <div class="modal-header">
             <h3>{{ isEditMode ? 'Edit Jabatan' : 'Tambah Jabatan' }}</h3>
             <button class="modal-close" @click="closeModal">
@@ -93,19 +93,19 @@
           <div class="modal-body">
             <div class="form-group">
               <label>Nama Jabatan</label>
-              <input v-model="form.title" type="text" placeholder="Masukkan nama jabatan" />
+              <input v-model="form.title" type="text" placeholder="Masukkan nama jabatan" @keyup.enter="saveData" />
             </div>
             <div class="form-group">
               <label>Departemen</label>
               <select v-model="form.department_id">
-                <option value="" disabled>Pilih departemen</option>
+                <option :value="null" disabled>Pilih departemen</option>
                 <option v-for="d in departmentOptions" :key="d.id" :value="d.id">{{ d.name }}</option>
               </select>
             </div>
           </div>
           <div class="modal-footer">
             <button class="btn-cancel" @click="closeModal">Batal</button>
-            <button class="btn-save" @click="saveData">Simpan</button>
+            <button class="btn-save" @keyup.enter="saveData" @click="saveData">Simpan</button>
           </div>
         </div>
       </div>
@@ -133,6 +133,28 @@
         </div>
       </div>
     </Teleport>
+
+    <Teleport to="body">
+      <div class="toast-container">
+        <TransitionGroup name="toast">
+          <div
+            v-for="toast in toasts"
+            :key="toast.id"
+            class="toast"
+            :class="'toast--' + toast.type"
+          >
+            <div class="toast-icon">
+              <svg v-if="toast.type === 'success'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <span class="toast-msg">{{ toast.message }}</span>
+            <button class="toast-close" @click="removeToast(toast.id)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </TransitionGroup>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -141,9 +163,11 @@ import { ref, computed, onMounted } from 'vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppTopbar from '@/components/AppTopbar.vue'
 import { useJabatan } from '@/composables/useJabatan'
+import { useToast } from '@/composables/useToast'
 
 const activeNav = ref('jabatan')
-const handleLogout = () => console.log('logout')
+
+const { toasts, removeToast } = useToast()
 
 const {
   jabatanList,
@@ -164,7 +188,8 @@ const {
   deleteTarget,
   deleteData,
   saveData,
-  getDepartmentName
+  getDepartmentName,
+  handleLogout
 } = useJabatan()
 
 onMounted(() => {
@@ -578,4 +603,79 @@ onMounted(() => {
 .delete-confirm-text strong {
   color: #1a2e25;
 }
+
+/* ===== TOAST ===== */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  min-width: 260px;
+  max-width: 360px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  pointer-events: all;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.toast--success {
+  background: #f0faf5;
+  border: 1.5px solid #b6e2ce;
+  color: #1a6044;
+}
+
+.toast--error {
+  background: #fff5f5;
+  border: 1.5px solid #f5c0c0;
+  color: #a03030;
+}
+
+.toast-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.toast--success .toast-icon { background: #2e7d5e; color: #fff; }
+.toast--error   .toast-icon { background: #d05050; color: #fff; }
+
+.toast-msg  { flex: 1; line-height: 1.4; }
+
+.toast-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.5;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.toast-close:hover { opacity: 1; }
+
+/* ===== TOAST TRANSITION ===== */
+.toast-enter-active { transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.toast-leave-active { transition: all 0.2s ease; }
+.toast-enter-from   { opacity: 0; transform: translateX(40px) scale(0.9); }
+.toast-leave-to     { opacity: 0; transform: translateX(40px); }
+.toast-move         { transition: transform 0.3s ease; }
 </style>

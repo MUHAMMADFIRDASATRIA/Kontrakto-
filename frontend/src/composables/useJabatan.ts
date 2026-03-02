@@ -1,6 +1,9 @@
 import { ref, onMounted, computed } from 'vue';
 import api from '@/services/api';
 import { useRoute, useRouter } from 'vue-router';
+import { useToast } from '@/composables/useToast';
+
+const { toasts, addToast, removeToast } = useToast()
 
 
 interface Jabatan {
@@ -76,8 +79,10 @@ export function useJabatan() {
       await api.delete(`/Positions/${deleteTarget.value}`);
       jabatanList.value = jabatanList.value.filter(j => j.id !== deleteTarget.value);
       showDeleteModal.value = false;
+      addToast('Jabatan berhasil dihapus', 'success');
     } catch (err) {
       error.value = 'Failed to delete position';
+      addToast('Gagal menghapus jabatan', 'error');
     }
   }
 
@@ -94,12 +99,19 @@ export function useJabatan() {
         const res = await api.put(`/Positions/${editingId.value}`, form.value);
         const idx = jabatanList.value.findIndex(j => j.id === editingId.value);
         if (idx !== -1) jabatanList.value[idx] = res.data.position;
+        closeModal();
+        addToast('Jabatan berhasil diperbarui', 'success');
+
       } else {
         const res = await api.post('/Positions', form.value);
         jabatanList.value.push(res.data.position);
+        closeModal();
+        addToast('Jabatan berhasil ditambahkan', 'success');
+
       }
     } catch (err) {
       error.value = 'Failed to save position';
+      addToast('Gagal menyimpan jabatan', 'error');
     }
     };
 
@@ -124,6 +136,11 @@ export function useJabatan() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    router.push('/');
+  };
+
   return {
     jabatan,
     departmentOptions,
@@ -144,6 +161,7 @@ export function useJabatan() {
     confirmDelete,
     openAddModal,
     openEditModal,
+    handleLogout,
     closeModal,
     saveData,
     getDepartmentName,

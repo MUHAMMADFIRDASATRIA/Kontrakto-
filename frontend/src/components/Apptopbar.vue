@@ -1,13 +1,5 @@
 <template>
   <header class="topbar">
-    <div class="search-bar">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" placeholder="Search..." v-model="searchQuery" />
-      <div class="search-chevron">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-    </div>
-
     <div class="topbar-user">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       <span class="user-label">{{ username }}</span>
@@ -20,7 +12,6 @@
 
 <script setup>
 import { ref } from 'vue'
-
 defineProps({
   username: {
     type: String,
@@ -28,7 +19,6 @@ defineProps({
   },
 })
 
-const searchQuery = ref('')
 </script>
 
 <style scoped>
@@ -40,35 +30,12 @@ const searchQuery = ref('')
   border-bottom: 1px solid #ebebeb;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 0 28px;
   flex-shrink: 0;
 }
 
-.search-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #f7f7f9;
-  border: 1px solid #ebebeb;
-  border-radius: 10px;
-  padding: 8px 14px;
-  width: 420px;
-}
-
-.search-bar input {
-  border: none;
-  background: none;
-  outline: none;
-  font-size: 13px;
-  color: #555;
-  flex: 1;
-  font-family: 'Segoe UI', sans-serif;
-}
-
-.search-bar input::placeholder { color: #bbb; }
-
-.search-chevron { margin-left: auto; }
+/* search bar removed — profile remains aligned right */
 
 .topbar-user {
   display: flex;

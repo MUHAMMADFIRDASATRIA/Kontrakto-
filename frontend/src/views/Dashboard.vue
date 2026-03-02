@@ -256,7 +256,7 @@ import AppSidebar from '@/components/AppSidebar.vue'
 import AppTopbar from '@/components/AppTopbar.vue'
 import router from '@/router'
 
-const activeNav = ref('karyawan')
+const activeNav = ref('Dashboard')
 
 const handleLogout = () => {
   localStorage.removeItem('token')

@@ -26,7 +26,7 @@
         <!-- Table Card -->
         <div class="table-card">
           <div class="table-card-header">
-            <h2 class="table-card-title"></h2>
+            <h2 class="table-card-title"> Daftar Departemen</h2>
           </div>
 
           <!-- Loading State -->
@@ -185,7 +185,6 @@ import { useDepartment } from '@/composables/useDepartment'
 import { useToast } from '@/composables/useToast'
 
 const activeNav = ref('departemen')
-const handleLogout = () => console.log('logout')
 
 const { toasts, addToast, removeToast } = useToast()
 
@@ -210,6 +209,7 @@ const {
     deleteTargetName,
     confirmDelete,
     deleteData: _deleteData,
+    handleLogout
 } = useDepartment()
 
 const saveData = async () => {

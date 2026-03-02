@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '@/services/api'
 
 interface ApiError {
@@ -13,6 +14,7 @@ interface Department {
 }
 
 export function useDepartment() {
+    const router = useRouter()
     const isLoading  = ref(false)
     const isSaving   = ref(false)
     const isDeleting = ref(false)
@@ -110,6 +112,11 @@ export function useDepartment() {
         }
     }
 
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        router.push('/');
+    };
+
     return {
         isLoading, 
         isSaving, 
@@ -132,6 +139,7 @@ export function useDepartment() {
         closeModal,
         saveData, 
         confirmDelete, 
+        handleLogout,
         deleteData,
     }
 }
