@@ -52,6 +52,7 @@ class EmployeesController extends Controller
             'position_id' => $request->input('position_id'),
         ]);
 
+        $employee->load('position');
 
         return response()->json([
             'message' => 'Employee created successfully',
@@ -99,6 +100,7 @@ class EmployeesController extends Controller
         }
 
         $employee->update($data);
+        $employee->load('position');
 
         return response()->json([
             'message' => 'Employee updated successfully',

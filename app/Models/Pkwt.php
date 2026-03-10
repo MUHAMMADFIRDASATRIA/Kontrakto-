@@ -9,6 +9,7 @@ class Pkwt extends Model
     protected $table = 'pkwt';
 
     protected $fillable = [
+        'user_id',
         'employee_id',
         'contract_number',
         'start_date',

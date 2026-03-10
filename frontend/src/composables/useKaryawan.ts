@@ -147,9 +147,19 @@ export function useKaryawan() {
         showDeleteModal.value = true
     }
 
-    const deletedDelete = async (k: Employees) => {
-        deleteTarget.value = k.id
-        showDeleteModal.value = false
+    const deleteData = async () => {
+        if (!deleteTarget.value) return
+        isDeleting.value = true
+        try {
+            await api.delete(`/Employees/${deleteTarget.value}`)
+            karyawanList.value = karyawanList.value.filter(k => k.id !== deleteTarget.value)
+            showDeleteModal.value = false
+            addToast('Karyawan berhasil dihapus', 'success')
+        } catch (error) {
+            addToast('Gagal menghapus karyawan', 'error')
+        } finally {
+            isDeleting.value = false
+        }
     }
 
     const closeModal = () => {
@@ -159,6 +169,7 @@ export function useKaryawan() {
     }
 
     const saveData = async () => {
+        isSaving.value = true
         try {
             if (isEditing.value && editingId.value) {
                 const res = await api.put(`/Employees/${editingId.value}`, form.value)
@@ -175,6 +186,8 @@ export function useKaryawan() {
         } catch (error) {
             const apiError = error as ApiError
             addToast(apiError.message || 'Gagal menyimpan data', 'error')
+        } finally {
+            isSaving.value = false
         }
     };
 
@@ -228,13 +241,12 @@ export function useKaryawan() {
         sortBy,
         departmentOptions,
         jabatanList,
-        // alias for views using Indonesian name
         departemenOptions: departmentOptions,
         getJabatanName,
         openAddModal,
         openEditModal,
         confirmDelete,
-        deletedDelete,
+        deleteData,
         closeModal,
         saveData,
         loadData,

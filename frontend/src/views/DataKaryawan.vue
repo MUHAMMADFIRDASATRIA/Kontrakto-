@@ -173,8 +173,11 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button class="btn-cancel" @click="closeModal">Batal</button>
-            <button class="btn-save" @click="saveData">Simpan</button>
+            <button class="btn-cancel" :disabled="isSaving" @click="closeModal">Batal</button>
+            <button class="btn-save" :disabled="isSaving" @click="saveData">
+              <span v-if="isSaving" class="btn-spinner"></span>
+              {{ isSaving ? 'Menyimpan...' : 'Simpan' }}
+            </button>
           </div>
         </div>
       </div>
@@ -192,14 +195,38 @@
           </div>
           <div class="modal-body">
             <p class="delete-confirm-text">
-              Yakin ingin menghapus <strong>{{ deleteTarget?.nama }}</strong>?
+              Yakin ingin menghapus <strong>{{ deleteTargetName }}</strong>?
             </p>
           </div>
           <div class="modal-footer">
-            <button class="btn-cancel" @click="showDeleteModal = false">Batal</button>
-            <button class="btn-danger" @click="deleteData">Hapus</button>
+            <button class="btn-cancel" :disabled="isDeleting" @click="showDeleteModal = false">Batal</button>
+            <button class="btn-danger" :disabled="isDeleting" @click="deleteData">
+              <svg v-if="isDeleting" class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a10 10 0 0 1 10 10" /></svg>
+              {{ isDeleting ? 'Menghapus...' : 'Hapus' }}
+            </button>
           </div>
         </div>
+      </div>
+    </Teleport>
+    <Teleport to="body">
+      <div class="toast-container">
+        <TransitionGroup name="toast">
+          <div
+            v-for="toast in toasts"
+            :key="toast.id"
+            class="toast"
+            :class="'toast--' + toast.type"
+          >
+            <div class="toast-icon">
+              <svg v-if="toast.type === 'success'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <span class="toast-msg">{{ toast.message }}</span>
+            <button class="toast-close" @click="removeToast(toast.id)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </TransitionGroup>
       </div>
     </Teleport>
   </div>
@@ -213,6 +240,8 @@ import { useKaryawan } from '@/composables/useKaryawan.js'
 import { useToast } from '@/composables/useToast.js'
 
 const activeNav = ref('karyawan')
+
+const { toasts, addToast, removeToast } = useToast()
 
 const {
   karyawanList,
@@ -230,11 +259,14 @@ const {
   visiblePages,
   jabatanList,
   totalPages,
+  isSaving,
   openAddModal,
   openEditModal,
   closeModal,
   showDeleteModal,
   deleteTarget,
+  deleteTargetName,
+  isDeleting,
   confirmDelete,
   deleteData,
   saveData,
@@ -749,4 +781,73 @@ onMounted(()=> {
 
 .delete-confirm-text { font-size: 14px; color: #555; line-height: 1.6; }
 .delete-confirm-text strong { color: #1a2e25; }
+
+/* ===== TOAST ===== */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.13);
+  font-size: 13.5px;
+  font-weight: 500;
+  min-width: 260px;
+  max-width: 360px;
+  pointer-events: auto;
+  border-left: 4px solid transparent;
+}
+
+.toast--success { border-left-color: #2e7d5e; color: #1a2e25; }
+.toast--success .toast-icon { color: #2e7d5e; }
+
+.toast--error { border-left-color: #d05050; color: #5c1a1a; }
+.toast--error .toast-icon { color: #d05050; }
+
+.toast-icon { display: flex; align-items: center; flex-shrink: 0; }
+.toast-msg  { flex: 1; }
+
+.toast-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #bbb;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.toast-close:hover { color: #666; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 0.7s linear infinite; }
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.toast-enter-from  { opacity: 0; transform: translateX(30px); }
+.toast-enter-active { transition: opacity 0.25s, transform 0.25s; }
+.toast-leave-active { transition: opacity 0.25s, transform 0.25s; }
+.toast-leave-to    { opacity: 0; transform: translateX(30px); }
 </style>

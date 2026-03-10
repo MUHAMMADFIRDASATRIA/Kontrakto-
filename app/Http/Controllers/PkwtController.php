@@ -18,7 +18,7 @@ class PkwtController extends Controller
     public function showPkwt()
     {
         $user = Auth::user();
-        $pkwts = Pkwt::where('user_id', $user->id)->get();
+        $pkwts = Pkwt::with('employee')->where('user_id', $user->id)->get();
 
         return response()->json([
             'message' => 'PKWT contracts retrieved successfully',
@@ -29,22 +29,29 @@ class PkwtController extends Controller
     public function createPkwt(Request $request)
     {
         $user = Auth::user();
-        $pkwts = Pkwt::where('user_id', $user->id)->get();
 
         $request->validate([
-            'employee_id' => 'required|integer|exists:employees,id',
-            'contract_number' => 'required|string|max:255|unique:pkwts,contract_number',
-            'start_date' => 'required|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'status' => 'required|string|in:active,expired',
+            'employee_id'    => 'required|integer|exists:employees,id',
+            'tglMulaiRaw'    => 'required|date',
+            'tglBerakhirRaw' => 'required|date|after_or_equal:tglMulaiRaw',
         ]);
 
+        $end  = new \DateTime($request->input('tglBerakhirRaw'));
+        $now  = new \DateTime('today');
+        $diff = (int) $now->diff($end)->days;
+        $sisa = $end >= $now ? $diff : -$diff;
+
+        if ($sisa < 0)       $status = 'expired';
+        elseif ($sisa <= 30) $status = 'near-expired';
+        else                 $status = 'active';
+
         $pkwt = Pkwt::create([
-            'employee_id' => $request->input('employee_id'),
+            'user_id'         => $user->id,
+            'employee_id'     => $request->input('employee_id'),
             'contract_number' => 'PKWT-' . time(),
-            'start_date' => $request->input('start_date'),
-            'end_date' => $request->input('end_date'),
-            'status' => $request->input('status'),
+            'start_date'      => $request->input('tglMulaiRaw'),
+            'end_date'        => $request->input('tglBerakhirRaw'),
+            'status'          => $status,
         ]);
 
         return response()->json([
@@ -57,7 +64,7 @@ class PkwtController extends Controller
     {
         $user = Auth::user();
         $pkwt = Pkwt::where('id', $id)
-                    ->where('user_id', $user->id)->get()
+                    ->where('user_id', $user->id)
                     ->first();
 
         if (!$pkwt) {
@@ -65,32 +72,26 @@ class PkwtController extends Controller
         }
 
         $request->validate([
-            'employee_id' => 'required|integer|exists:employees,id',
-            'contract_number' => 'required|string|max:255|unique:pkwts,contract_number,' . $id,
-            'start_date' => 'required|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'status' => 'required|string|in:active,expired',
+            'employee_id'    => 'required|integer|exists:employees,id',
+            'tglMulaiRaw'    => 'required|date',
+            'tglBerakhirRaw' => 'required|date|after_or_equal:tglMulaiRaw',
         ]);
 
-        $data = [];
+        $end  = new \DateTime($request->input('tglBerakhirRaw'));
+        $now  = new \DateTime('today');
+        $diff = (int) $now->diff($end)->days;
+        $sisa = $end >= $now ? $diff : -$diff;
 
-        if ($request->filled('employee_id')) {
-            $data['employee_id'] = $request->input('employee_id');
-        }
-        if ($request->filled('contract_number')) {
-            $data['contract_number'] = $request->input('contract_number');
-        }
-        if ($request->filled('start_date')) {
-            $data['start_date'] = $request->input('start_date');
-        }
-        if ($request->filled('end_date')) {
-            $data['end_date'] = $request->input('end_date');
-        }
-        if ($request->filled('status')) {
-            $data['status'] = $request->input('status');
-        }
+        if ($sisa < 0)       $status = 'expired';
+        elseif ($sisa <= 30) $status = 'near-expired';
+        else                 $status = 'active';
 
-        $pkwt->update($data);
+        $pkwt->update([
+            'employee_id' => $request->input('employee_id'),
+            'start_date'  => $request->input('tglMulaiRaw'),
+            'end_date'    => $request->input('tglBerakhirRaw'),
+            'status'      => $status,
+        ]);
 
         return response()->json([
             'message' => 'PKWT contract updated successfully',

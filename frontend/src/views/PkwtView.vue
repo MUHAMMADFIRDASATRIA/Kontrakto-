@@ -7,26 +7,12 @@
 
       <div class="content-area">
 
-        <!-- Breadcrumb + Actions -->
+        <!-- Breadcrumb -->
         <div class="top-row">
           <div class="breadcrumb">
             <span class="bc-parent">Master Data</span>
             <span class="bc-sep">/</span>
             <span class="bc-current">Data PKWT</span>
-          </div>
-          <div class="header-actions">
-            <button class="btn-primary" @click="openAddModal">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Tambah PKWT
-            </button>
-            <button class="btn-outline">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Export
-            </button>
-            <button class="btn-outline">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-              Filter
-            </button>
           </div>
         </div>
 
@@ -103,7 +89,7 @@
             <div class="filter-select">
               <select v-model="filterDept">
                 <option value="">Semua Departemen</option>
-                <option v-for="d in departemenOptions" :key="d" :value="d">{{ d }}</option>
+                <option v-for="d in departemenOptions" :key="d.value" :value="d.value">{{ d.label }}</option>
               </select>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
@@ -113,10 +99,16 @@
               <input v-model="filterDate" type="date" />
             </div>
 
-            <button class="btn-filter">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-              Filter
-            </button>
+            <div class="filter-actions">
+              <button class="btn-outline" >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export
+              </button>
+              <button class="btn-primary" @click="openAddModal">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Tambah PKWT
+              </button>
+            </div>
           </div>
 
           <!-- Table -->
@@ -147,11 +139,11 @@
                     </div>
                   </td>
                   <td class="col-jabatan">{{ item.jabatan }}</td>
-                  <td class="col-dept">{{ item.departemen }}</td>
+                  <td class="col-dept">{{ item.department }}</td>
                   <td class="col-tgl">{{ item.tglMulai }}</td>
                   <td class="col-tgl">{{ item.tglBerakhir }}</td>
                   <td class="col-sisa">
-                    <span :class="sisaClass(item.sisaHari)">
+                    <span :class="sisaClass(item.sisa)">
                       <strong>{{ item.sisaHari }}</strong> Hari
                     </span>
                   </td>
@@ -166,12 +158,12 @@
                       <button class="btn-icon" title="Lihat Detail">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                       </button>
-                      <template v-if="item.status !== 'Akan Berakhir'">
-                        <button class="btn-edit-sm" @click="openEditModal(item)">Edit</button>
-                        <button class="btn-more">
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
-                        </button>
-                      </template>
+                      <button class="btn-edit-sm" @click="openEditModal(item)" title="Edit">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                      <button class="btn-delete-sm" @click="confirmDelete(item)" title="Hapus">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -232,28 +224,25 @@
             <div class="form-row">
               <div class="form-group">
                 <label>Nama Karyawan</label>
-                <input v-model="form.nama" type="text" placeholder="Masukkan nama" />
-              </div>
-              <div class="form-group">
-                <label>Jabatan</label>
-                <input v-model="form.jabatan" type="text" placeholder="Masukkan jabatan" />
+                <select v-model="form.employee_id">
+                  <option value="" disabled>Pilih karyawan</option>
+                  <option v-for="e in employeeOptions" :key="e.value" :value="e.value">{{ e.label }}</option>
+                </select>
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label>Departemen</label>
-                <select v-model="form.departemen">
+                <select v-model="form.department">
                   <option value="" disabled>Pilih departemen</option>
-                  <option v-for="d in departemenOptions" :key="d" :value="d">{{ d }}</option>
+                  <option v-for="d in departemenOptions" :key="d.value" :value="d.value">{{ d.label }}</option>
                 </select>
               </div>
               <div class="form-group">
-                <label>Status</label>
-                <select v-model="form.status">
-                  <option value="" disabled>Pilih status</option>
-                  <option value="Aktif">Aktif</option>
-                  <option value="Akan Berakhir">Akan Berakhir</option>
-                  <option value="Expired">Expired</option>
+                <label>Jabatan</label>
+                <select v-model="form.jabatan" :disabled="!form.department">
+                  <option value="" disabled>{{ form.department ? 'Pilih jabatan' : 'Pilih departemen dulu' }}</option>
+                  <option v-for="p in positionOptions" :key="p.value" :value="p.value">{{ p.label }}</option>
                 </select>
               </div>
             </div>
@@ -275,6 +264,49 @@
         </div>
       </div>
     </Teleport>
+    <!-- MODAL: Konfirmasi Hapus -->
+    <Teleport to="body">
+      <div class="modal-overlay" v-if="showDeleteModal" @click.self="showDeleteModal = false">
+        <div class="modal modal-sm">
+          <div class="modal-header">
+            <h3>Hapus PKWT</h3>
+            <button class="modal-close" @click="showDeleteModal = false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p class="delete-confirm-text">
+              Yakin ingin menghapus PKWT milik <strong>{{ deleteTargetName }}</strong>?
+            </p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-cancel" :disabled="isDeleting" @click="showDeleteModal = false">Batal</button>
+            <button class="btn-danger" :disabled="isDeleting" @click="deleteData">
+              <span v-if="isDeleting" class="btn-spinner"></span>
+              {{ isDeleting ? 'Menghapus...' : 'Hapus' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- TOAST -->
+    <Teleport to="body">
+      <div class="toast-container">
+        <TransitionGroup name="toast">
+          <div v-for="toast in toasts" :key="toast.id" class="toast" :class="'toast--' + toast.type">
+            <div class="toast-icon">
+              <svg v-if="toast.type === 'success'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <span class="toast-msg">{{ toast.message }}</span>
+            <button class="toast-close" @click="removeToast(toast.id)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </TransitionGroup>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -282,137 +314,46 @@
 import { ref, computed, watch } from 'vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppTopbar from '@/components/AppTopbar.vue'
+import { usePKWT } from '@/composables/usePKWT'
 
-const activeNav   = ref('pkwt')
-const handleLogout = () => console.log('logout')
 
-// ===== HELPERS =====
-const formatDate = (raw) => {
-  if (!raw) return ''
-  const d = new Date(raw)
-  const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des']
-  return `${String(d.getDate()).padStart(2,'0')} ${months[d.getMonth()]} ${d.getFullYear()}`
-}
+const {
+    stats,
+    searchQuery,
+    filterStatus,
+    filterDept,
+    filterDate,
+    departemenOptions,
+    employeeOptions,
+    positionOptions,
+    filteredData,
+    paginatedData,
+    currentPage,
+    perPage,
+    totalPages,
+    visiblePages,
+    showModal,
+    isEditing,
+    isSaving,
+    form,
+    showDeleteModal,
+    deleteTarget,
+    deleteTargetName,
+    isDeleting,
+    toasts,
+    removeToast,
+    sisaClass,
+    statusClass,
+    openAddModal,
+    openEditModal,
+    closeModal,
+    saveData,
+    confirmDelete,
+    deleteData,
+    handleLogout,
+    activeNav
+} = usePKWT()
 
-const calcSisa = (tglBerakhirRaw) => {
-  const now  = new Date(); now.setHours(0,0,0,0)
-  const end  = new Date(tglBerakhirRaw)
-  return Math.round((end - now) / 86400000)
-}
-
-// ===== DATA =====
-const pkwtList = ref([
-  { id:1, nama:'Budi Santoso',  jabatan:'Staff HRD',      departemen:'HRD & GA',  tglMulai:'01 Mar 2025', tglBerakhir:'31 Des 2025', sisaHari:250,  status:'Aktif'         },
-  { id:2, nama:'Siti Rahma',    jabatan:'Supervisor IT',   departemen:'IT',         tglMulai:'15 Jan 2025', tglBerakhir:'15 Nov 2025', sisaHari:205,  status:'Aktif'         },
-  { id:3, nama:'Ahmad Fauzi',   jabatan:'Staff IT',        departemen:'IT',         tglMulai:'10 Feb 2025', tglBerakhir:'10 Okt 2025', sisaHari:180,  status:'Aktif'         },
-  { id:4, nama:'Dewi Lestari',  jabatan:'Operator',        departemen:'Produksi',   tglMulai:'05 Jan 2025', tglBerakhir:'05 Mei 2025', sisaHari:12,   status:'Akan Berakhir' },
-  { id:5, nama:'Rizky Ananda',  jabatan:'Accounting',      departemen:'Finance',    tglMulai:'20 Des 2024', tglBerakhir:'20 Apr 2025', sisaHari:-5,   status:'Expired'       },
-  { id:6, nama:'Maya Sari',     jabatan:'Staff Admin',     departemen:'HRD & GA',   tglMulai:'01 Mar 2025', tglBerakhir:'01 Sep 2025', sisaHari:150,  status:'Aktif'         },
-  { id:7, nama:'Joko Pratama',  jabatan:'Manager Sales',   departemen:'Sales',      tglMulai:'01 Jan 2025', tglBerakhir:'31 Des 2025', sisaHari:300,  status:'Aktif'         },
-])
-
-const departemenOptions = ['HRD & GA','IT','Finance','Produksi','Sales','Marketing','GA']
-
-// ===== STATS =====
-const stats = computed(() => ({
-  total       : pkwtList.value.length,
-  aktif       : pkwtList.value.filter(k => k.status === 'Aktif').length,
-  akanBerakhir: pkwtList.value.filter(k => k.status === 'Akan Berakhir').length,
-  expired     : pkwtList.value.filter(k => k.status === 'Expired').length,
-}))
-
-// ===== FILTERS =====
-const searchQuery  = ref('')
-const filterStatus = ref('')
-const filterDept   = ref('')
-const filterDate   = ref('')
-
-const filteredData = computed(() => {
-  return pkwtList.value.filter(k => {
-    const q = searchQuery.value.toLowerCase()
-    const matchSearch = !q || k.nama.toLowerCase().includes(q) || k.jabatan.toLowerCase().includes(q)
-    const matchStatus = !filterStatus.value || k.status === filterStatus.value
-    const matchDept   = !filterDept.value   || k.departemen === filterDept.value
-    return matchSearch && matchStatus && matchDept
-  })
-})
-
-watch([searchQuery, filterStatus, filterDept, filterDate], () => { currentPage.value = 1 })
-
-// ===== PAGINATION =====
-const currentPage = ref(1)
-const perPage     = ref(10)
-
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredData.value.length / perPage.value)))
-
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * perPage.value
-  return filteredData.value.slice(start, start + perPage.value)
-})
-
-const visiblePages = computed(() => {
-  const total = totalPages.value
-  const cur   = currentPage.value
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
-  const pages = []
-  pages.push(1)
-  if (cur > 3) pages.push('...')
-  for (let i = Math.max(2, cur - 1); i <= Math.min(total - 1, cur + 1); i++) pages.push(i)
-  if (cur < total - 2) pages.push('...')
-  pages.push(total)
-  return pages
-})
-
-// ===== STATUS / SISA STYLES =====
-const statusClass = (status) => ({
-  'badge-aktif'        : status === 'Aktif',
-  'badge-akan'         : status === 'Akan Berakhir',
-  'badge-expired'      : status === 'Expired',
-})
-
-const sisaClass = (sisa) => ({
-  'sisa-normal'  : sisa > 30,
-  'sisa-warning' : sisa > 0 && sisa <= 30,
-  'sisa-expired' : sisa <= 0,
-})
-
-// ===== MODAL =====
-const showModal  = ref(false)
-const isEditing  = ref(false)
-const editingId  = ref(null)
-const form       = ref({ nama:'', jabatan:'', departemen:'', status:'', tglMulaiRaw:'', tglBerakhirRaw:'' })
-
-const openAddModal = () => {
-  isEditing.value = false
-  editingId.value = null
-  form.value = { nama:'', jabatan:'', departemen:'', status:'', tglMulaiRaw:'', tglBerakhirRaw:'' }
-  showModal.value = true
-}
-
-const openEditModal = (item) => {
-  isEditing.value = true
-  editingId.value = item.id
-  form.value = { nama: item.nama, jabatan: item.jabatan, departemen: item.departemen, status: item.status, tglMulaiRaw:'', tglBerakhirRaw:'' }
-  showModal.value = true
-}
-
-const closeModal = () => { showModal.value = false }
-
-const saveData = () => {
-  if (!form.value.nama.trim() || !form.value.departemen || !form.value.status) return
-  const tglMulai    = form.value.tglMulaiRaw    ? formatDate(form.value.tglMulaiRaw)    : '-'
-  const tglBerakhir = form.value.tglBerakhirRaw ? formatDate(form.value.tglBerakhirRaw) : '-'
-  const sisaHari    = form.value.tglBerakhirRaw ? calcSisa(form.value.tglBerakhirRaw) : 0
-
-  if (isEditing.value) {
-    const idx = pkwtList.value.findIndex(k => k.id === editingId.value)
-    if (idx !== -1) pkwtList.value[idx] = { id: editingId.value, ...form.value, tglMulai, tglBerakhir, sisaHari }
-  } else {
-    const newId = Math.max(...pkwtList.value.map(k => k.id), 0) + 1
-    pkwtList.value.push({ id: newId, ...form.value, tglMulai, tglBerakhir, sisaHari })
-  }
-  closeModal()
-}
 </script>
 
 <style scoped>
@@ -622,23 +563,12 @@ const saveData = () => {
   cursor: pointer; flex: 1;
 }
 
-.btn-filter {
+.filter-actions {
   display: flex;
   align-items: center;
-  gap: 7px;
-  background: #eaf5f0;
-  color: #2e7d5e;
-  border: 1.5px solid #c0e0d3;
-  border-radius: 9px;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s;
+  gap: 8px;
   margin-left: auto;
 }
-.btn-filter:hover { background: #d8eeea; }
 
 /* ===== TABLE ===== */
 .table-wrap { overflow-x: auto; }
@@ -753,18 +683,28 @@ const saveData = () => {
 .btn-icon:hover { background: #f5f5f5; color: #333; }
 
 .btn-edit-sm {
+  width: 30px; height: 30px;
   background: #fff;
-  border: 1.5px solid #2e7d5e;
-  color: #2e7d5e;
+  border: 1.5px solid #c0e0d3;
   border-radius: 7px;
-  padding: 5px 12px;
-  font-size: 12.5px;
-  font-weight: 600;
   cursor: pointer;
-  font-family: inherit;
+  display: flex; align-items: center; justify-content: center;
+  color: #2e7d5e;
   transition: all 0.15s;
 }
-.btn-edit-sm:hover { background: #eaf5f0; }
+.btn-edit-sm:hover { background: #eaf5f0; border-color: #2e7d5e; }
+
+.btn-delete-sm {
+  width: 30px; height: 30px;
+  border: 1.5px solid #e8d0d0;
+  border-radius: 7px;
+  background: #fff;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #d05050;
+  transition: all 0.15s;
+}
+.btn-delete-sm:hover { background: #fff0f0; border-color: #d05050; }
 
 .btn-more {
   width: 30px; height: 30px;
@@ -951,4 +891,71 @@ const saveData = () => {
   transition: background 0.15s;
 }
 .btn-save:hover { background: #256b50; }
+
+.btn-danger {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 20px;
+  border: none; border-radius: 8px;
+  background: #d05050; font-size: 13.5px; font-weight: 600;
+  color: #fff; cursor: pointer; font-family: inherit;
+  transition: background 0.15s;
+}
+.btn-danger:hover { background: #b83e3e; }
+.btn-danger:disabled,
+.btn-cancel:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.delete-confirm-text { font-size: 14px; color: #555; line-height: 1.6; }
+.delete-confirm-text strong { color: #1a2e25; }
+
+.modal-sm { width: 380px; }
+
+/* ===== BUTTON SPINNER ===== */
+@keyframes spin { to { transform: rotate(360deg); } }
+.btn-spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* ===== TOAST ===== */
+.toast-container {
+  position: fixed;
+  top: 20px; right: 20px;
+  z-index: 9999;
+  display: flex; flex-direction: column; gap: 10px;
+  pointer-events: none;
+}
+.toast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.13);
+  font-size: 13.5px; font-weight: 500;
+  min-width: 260px; max-width: 360px;
+  pointer-events: auto;
+  border-left: 4px solid transparent;
+}
+.toast--success { border-left-color: #2e7d5e; color: #1a2e25; }
+.toast--success .toast-icon { color: #2e7d5e; }
+.toast--error { border-left-color: #d05050; color: #5c1a1a; }
+.toast--error .toast-icon { color: #d05050; }
+.toast-icon { display: flex; align-items: center; flex-shrink: 0; }
+.toast-msg  { flex: 1; }
+.toast-close {
+  background: none; border: none; cursor: pointer;
+  color: #bbb; display: flex; align-items: center; padding: 0;
+  flex-shrink: 0; transition: color 0.15s;
+}
+.toast-close:hover { color: #666; }
+.toast-enter-from  { opacity: 0; transform: translateX(30px); }
+.toast-enter-active { transition: opacity 0.25s, transform 0.25s; }
+.toast-leave-active { transition: opacity 0.25s, transform 0.25s; }
+.toast-leave-to    { opacity: 0; transform: translateX(30px); }
 </style>
