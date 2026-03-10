@@ -251,59 +251,27 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref } from 'vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppTopbar from '@/components/AppTopbar.vue'
-import router from '@/router'
+import { useDashboard } from '@/composables/useDashboard'
 
-const activeNav = ref('Dashboard')
-
-const handleLogout = () => {
-  localStorage.removeItem('token')
-  router.push('/')
-}
-
-// ===== CHART =====
-const chartWrap = ref(null)
-const chartW = ref(600)
-
-const chartH = 260
-const chartTopPad = 16
-const chartInnerH = 190
-const yAxisW = 28
-const barW = 22
-const yMax = 18
-const yTicks = [15, 10, 5, 0]
-
-const chartData = ref([
-  { label: 'Jan', active: 4,  near: 0, exp: 0 },
-  { label: 'Feb', active: 5,  near: 2, exp: 0 },
-  { label: 'Mar', active: 6,  near: 3, exp: 0 },
-  { label: 'Apr', active: 10, near: 3, exp: 2 },
-  { label: 'May', active: 9,  near: 2, exp: 2 },
-  { label: 'Jun', active: 8,  near: 1, exp: 2 },
-  { label: 'Jul', active: 2,  near: 0, exp: 1 },
-  { label: 'Aug', active: 3,  near: 1, exp: 0 },
-  { label: 'Sep', active: 5,  near: 2, exp: 1 },
-  { label: 'Oct', active: 7,  near: 2, exp: 0 },
-  { label: 'Nov', active: 6,  near: 3, exp: 1 },
-  { label: 'Dec', active: 4,  near: 1, exp: 0 },
-])
-
-const colW = computed(() => (chartW.value - yAxisW - 16) / chartData.value.length)
-const barX = (i) => yAxisW + colW.value * i + (colW.value - barW) / 2
-const barPx = (val) => (val / yMax) * chartInnerH
-const barY = (totalAbove) => chartTopPad + chartInnerH - barPx(totalAbove)
-
-const updateChartW = () => {
-  if (chartWrap.value) chartW.value = chartWrap.value.clientWidth || 600
-}
-
-onMounted(() => {
-  updateChartW()
-  window.addEventListener('resize', updateChartW)
-})
-onBeforeUnmount(() => window.removeEventListener('resize', updateChartW))
+const {
+  activeNav,
+  chartWrap,
+  chartW,
+  chartH,
+  chartTopPad,
+  chartInnerH,
+  yAxisW,
+  barW,
+  yTicks,
+  chartData,
+  barX,
+  barPx,
+  barY,
+  handleLogout
+} = useDashboard()
 
 // ===== DATA =====
 const departments = ref([
