@@ -24,7 +24,7 @@
             </div>
             <div class="stat-info">
               <p class="stat-label">Total Karyawan</p>
-              <h3 class="stat-value">232</h3>
+              <h3 class="stat-value">{{ totalEmployees }}</h3>
             </div>
           </div>
 
@@ -34,7 +34,7 @@
             </div>
             <div class="stat-info">
               <p class="stat-label">PKWT Aktif</p>
-              <h3 class="stat-value green-text">120</h3>
+              <h3 class="stat-value green-text">{{ activeCount }}</h3>
             </div>
           </div>
 
@@ -44,7 +44,7 @@
             </div>
             <div class="stat-info">
               <p class="stat-label">Near Expiry</p>
-              <h3 class="stat-value yellow-text">8</h3>
+              <h3 class="stat-value yellow-text">{{ nearExpiryCount }}</h3>
             </div>
           </div>
 
@@ -54,7 +54,7 @@
             </div>
             <div class="stat-info">
               <p class="stat-label">Sudah Berakhir</p>
-              <h3 class="stat-value red-text">5</h3>
+              <h3 class="stat-value red-text">{{ expiredCount }}</h3>
             </div>
           </div>
         </div>
@@ -122,7 +122,7 @@
             </div>
 
             <div class="dept-list">
-              <div class="dept-item" v-for="dept in departments" :key="dept.name">
+              <div class="dept-item" v-for="dept in activeDepartments" :key="dept.id">
                 <div class="dept-circle" :style="{ background: dept.color }"></div>
                 <div class="dept-texts">
                   <p class="dept-name">{{ dept.name }}</p>
@@ -143,18 +143,27 @@
             <h3 class="card-title" style="margin-bottom:16px">Statistik Singkat Pekerja</h3>
             <div class="pie-wrap">
               <svg width="130" height="130" viewBox="0 0 130 130">
-                <circle cx="65" cy="65" r="50" fill="none" stroke="#4db89e" stroke-width="28" stroke-dasharray="100.5 214.1" stroke-dashoffset="0" transform="rotate(-90 65 65)"/>
-                <circle cx="65" cy="65" r="50" fill="none" stroke="#f0c04a" stroke-width="28" stroke-dasharray="78.5 235.6" stroke-dashoffset="-100.5" transform="rotate(-90 65 65)"/>
-                <circle cx="65" cy="65" r="50" fill="none" stroke="#f07070" stroke-width="28" stroke-dasharray="56.5 257.6" stroke-dashoffset="-179" transform="rotate(-90 65 65)"/>
-                <circle cx="65" cy="65" r="50" fill="none" stroke="#6bb8d4" stroke-width="28" stroke-dasharray="47.1 267" stroke-dashoffset="-235.5" transform="rotate(-90 65 65)"/>
-                <circle cx="65" cy="65" r="50" fill="none" stroke="#a0c878" stroke-width="28" stroke-dasharray="31.4 282.7" stroke-dashoffset="-282.6" transform="rotate(-90 65 65)"/>
+                <circle cx="65" cy="65" r="50" fill="none" stroke="#eef0f4" stroke-width="28"/>
+                <circle
+                  v-for="segment in workerPieSegments"
+                  :key="segment.id"
+                  cx="65"
+                  cy="65"
+                  r="50"
+                  fill="none"
+                  :stroke="segment.color"
+                  stroke-width="28"
+                  :stroke-dasharray="segment.strokeDasharray"
+                  :stroke-dashoffset="segment.strokeDashoffset"
+                  transform="rotate(-90 65 65)"
+                />
                 <circle cx="65" cy="65" r="34" fill="white"/>
-                <text x="65" y="61" text-anchor="middle" fill="#333" font-size="13" font-weight="700">32%</text>
-                <text x="65" y="75" text-anchor="middle" fill="#999" font-size="9">HRD & GA</text>
+                <text x="65" y="61" text-anchor="middle" fill="#333" font-size="13" font-weight="700">{{ workerPieHighlight.pct }}</text>
+                <text x="65" y="75" text-anchor="middle" fill="#999" font-size="9">{{ workerPieHighlight.label }}</text>
               </svg>
 
               <div class="pie-legend">
-                <div class="pie-legend-item" v-for="pl in pieLegend" :key="pl.label">
+                <div class="pie-legend-item" v-for="pl in workerPieLegend" :key="pl.id">
                   <span class="legend-dot" :style="{ background: pl.color }"></span>
                   <span class="pie-legend-label">{{ pl.label }}</span>
                   <span class="pie-legend-pct">{{ pl.pct }}</span>
@@ -270,25 +279,18 @@ const {
   barX,
   barPx,
   barY,
+  totalEmployees,
+  activeCount,
+  nearExpiryCount,
+  expiredCount,
+  activeDepartments,
+  workerPieLegend,
+  workerPieSegments,
+  workerPieHighlight,
   handleLogout
 } = useDashboard()
 
 // ===== DATA =====
-const departments = ref([
-  { name: 'HRD & GA', sub: 'HRD & GA', count: 38, color: '#4db89e' },
-  { name: 'Produksi',  sub: 'Sales',    count: 34, color: '#f0c04a' },
-  { name: 'Sales',     sub: 'HRD',      count: 25, color: '#f07878' },
-  { name: 'IT',        sub: 'Finance',  count: 20, color: '#5bb8d4' },
-])
-
-const pieLegend = ref([
-  { label: 'HRD & GA', pct: '32%', color: '#4db89e' },
-  { label: 'Produksi',  pct: '25%', color: '#f0c04a' },
-  { label: 'Sales',     pct: '18%', color: '#f07070' },
-  { label: 'IT',        pct: '15%', color: '#6bb8d4' },
-  { label: 'Finance',   pct: '3%',  color: '#a0c878' },
-])
-
 const expiringEmployees = ref([
   { name: 'Andi Saputra', dept: 'Sales',    days: 5  },
   { name: 'Yogi Pratama', dept: 'Sales',    days: 9  },

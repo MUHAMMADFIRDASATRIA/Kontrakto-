@@ -92,15 +92,9 @@ export function usePKWT() {
         empRaw.value.map(e => ({ value: e.id, label: e.name }))
     )
 
-    const positionOptions = computed(() =>
-        posRaw.value
-            .filter(p => p.department_id === form.value.department)
-            .map(p => ({ value: p.id, label: p.title }))
-    )
-
     const stats = computed(() => ({
     total       : pkwtList.value.length,
-    aktif       : pkwtList.value.filter(k => k.status === 'Aktif').length,
+    aktif       : pkwtList.value.filter(k => k.status === 'Aktif' || k.status === 'Akan Berakhir').length,
     akanBerakhir: pkwtList.value.filter(k => k.status === 'Akan Berakhir').length,
     expired     : pkwtList.value.filter(k => k.status === 'Expired').length,
     }))
@@ -183,14 +177,26 @@ export function usePKWT() {
     const { toasts, addToast, removeToast } = useToast()
     const form = ref({
         'employee_id': '' as number | '',
-        'jabatan': '' as number | '',
-        'department': '' as number | '',
         'tglMulaiRaw': '',
         'tglBerakhirRaw': '',
     })
 
-    watch(() => form.value.department, () => {
-        form.value.jabatan = ''
+    const autoJabatan = computed(() => {
+        if (!form.value.employee_id) return ''
+        const emp = empRaw.value.find(e => e.id === form.value.employee_id)
+        if (!emp) return ''
+        const pos = posRaw.value.find(p => p.id === emp.position_id)
+        return pos?.title ?? ''
+    })
+
+    const autoDepartment = computed(() => {
+        if (!form.value.employee_id) return ''
+        const emp = empRaw.value.find(e => e.id === form.value.employee_id)
+        if (!emp) return ''
+        const pos = posRaw.value.find(p => p.id === emp.position_id)
+        if (!pos) return ''
+        const dept = deptRaw.value.find(d => d.id === pos.department_id)
+        return dept?.name ?? ''
     })
 
     const openAddModal = () => {
@@ -199,8 +205,6 @@ export function usePKWT() {
         editingId.value = null
         form.value = {
             'employee_id': '',
-            'jabatan': '',
-            'department': '',
             'tglMulaiRaw': '',
             'tglBerakhirRaw': '',
         }
@@ -210,12 +214,8 @@ export function usePKWT() {
         showModal.value = true
         isEditing.value = true
         editingId.value = item.id
-        const emp = (item as any).employee
-        const pos = posRaw.value.find(p => p.id === emp?.position_id)
         form.value = {
             'employee_id': (item as any).employee_id as number,
-            'jabatan': emp?.position_id ?? '',
-            'department': pos?.department_id ?? '',
             'tglMulaiRaw': (item as any).start_date_raw,
             'tglBerakhirRaw': (item as any).end_date_raw,
         }
@@ -280,7 +280,8 @@ export function usePKWT() {
         pkwtList,
         departemenOptions,
         employeeOptions,
-        positionOptions,
+        autoJabatan,
+        autoDepartment,
         stats,
         sisaClass,
         statusClass,

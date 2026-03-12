@@ -233,17 +233,11 @@
             <div class="form-row">
               <div class="form-group">
                 <label>Departemen</label>
-                <select v-model="form.department">
-                  <option value="" disabled>Pilih departemen</option>
-                  <option v-for="d in departemenOptions" :key="d.value" :value="d.value">{{ d.label }}</option>
-                </select>
+                <input :value="autoDepartment" type="text" readonly placeholder="Otomatis dari data karyawan" class="form-readonly" />
               </div>
               <div class="form-group">
                 <label>Jabatan</label>
-                <select v-model="form.jabatan" :disabled="!form.department">
-                  <option value="" disabled>{{ form.department ? 'Pilih jabatan' : 'Pilih departemen dulu' }}</option>
-                  <option v-for="p in positionOptions" :key="p.value" :value="p.value">{{ p.label }}</option>
-                </select>
+                <input :value="autoJabatan" type="text" readonly placeholder="Otomatis dari data karyawan" class="form-readonly" />
               </div>
             </div>
             <div class="form-row">
@@ -325,7 +319,8 @@ const {
     filterDate,
     departemenOptions,
     employeeOptions,
-    positionOptions,
+    autoJabatan,
+    autoDepartment,
     filteredData,
     paginatedData,
     currentPage,
@@ -867,6 +862,13 @@ const {
 .form-group input:focus,
 .form-group select:focus    { border-color: #2e7d5e; }
 .form-group input::placeholder { color: #bbb; }
+
+.form-readonly {
+  background: #f4f5f7 !important;
+  color: #888 !important;
+  cursor: default !important;
+  pointer-events: none;
+}
 
 .modal-footer {
   display: flex; align-items: center; justify-content: flex-end;
