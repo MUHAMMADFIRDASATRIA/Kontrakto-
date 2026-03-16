@@ -15,7 +15,11 @@ interface Employees {
     phone: string
     address: string
     position_id: number
-    department: string
+    position?: {
+        id: number
+        title: string
+        department_id: number
+    }
     [key: string]: unknown
 }
 
@@ -48,7 +52,7 @@ export function useKaryawan() {
     const departmentOptions = ref<Department[]>([])
 
     const searchQuery = ref('')
-    const filterDept  = ref('')
+    const filterDept  = ref<number | null>(null)
     const sortBy      = ref('nama-asc')
     
     watch([searchQuery, filterDept, sortBy], () => { currentPage.value = 1 })
@@ -56,7 +60,10 @@ export function useKaryawan() {
     const filteredData = computed(() => {
     let list = [...karyawanList.value]
 
-    if (filterDept.value)  list = list.filter(k => k.department === filterDept.value)
+    if (filterDept.value !== null) {
+        list = list.filter(k => k.position?.department_id === filterDept.value)
+    }
+
     if (searchQuery.value) {
         const q = searchQuery.value.toLowerCase()
         list = list.filter(k => k.name.toLowerCase().includes(q) || k.email.toLowerCase().includes(q))
@@ -64,7 +71,13 @@ export function useKaryawan() {
 
     if (sortBy.value === 'nama-asc')  list.sort((a,b) => a.name.localeCompare(b.name))
     if (sortBy.value === 'nama-desc') list.sort((a,b) => b.name.localeCompare(a.name))
-    if (sortBy.value === 'dept')      list.sort((a,b) => a.department.localeCompare(b.department))
+    if (sortBy.value === 'dept') {
+        list.sort((a, b) => {
+            const deptA = getDepartmentName(a.position?.department_id ?? 0)
+            const deptB = getDepartmentName(b.position?.department_id ?? 0)
+            return deptA.localeCompare(deptB)
+        })
+    }
 
     return list
     })

@@ -16,7 +16,7 @@
         <!-- Page Title -->
         <div class="page-header">
           <div>
-            <h1 class="page-title">Rekap Karyawan PKWT</h1>
+            <h1 class="page-title">Rekap Karyawan</h1>
             <p class="page-subtitle">Ringkasan status kontrak, departemen aktif, dan masa berakhir PKWT.</p>
           </div>
 

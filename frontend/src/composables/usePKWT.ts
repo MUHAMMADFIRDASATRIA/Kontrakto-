@@ -71,6 +71,7 @@ export function usePKWT() {
                 employee_name: emp?.name ?? '',
                 jabatan: pos?.title ?? '',
                 department: dept?.name ?? '',
+                department_id: pos?.department_id ?? null,
                 tglMulai: formatDate(item.start_date),
                 tglBerakhir: formatDate(item.end_date),
                 start_date: formatDate(item.start_date),
@@ -210,6 +211,10 @@ export function usePKWT() {
         }
     }
 
+    const viewDetail = (item: PKWT) => {
+        router.push(`/DetailKaryawan/${(item as any).employee_id}`)
+    }
+
     const openEditModal = (item: PKWT) => {
         showModal.value = true
         isEditing.value = true
@@ -303,6 +308,7 @@ export function usePKWT() {
         toasts,
         removeToast,
         openAddModal,
+        viewDetail,
         openEditModal,
         closeModal,
         saveData,

@@ -42,6 +42,7 @@ class EmployeesController extends Controller
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:255',
             'position_id' => 'required|integer|exists:positions,id',
+            'department_id' => 'required|integer|exists:departments,id',
         ]);
 
         $employee = Employees::create([
@@ -50,6 +51,7 @@ class EmployeesController extends Controller
             'phone' => $request->input('phone'),
             'address' => $request->input('address'),
             'position_id' => $request->input('position_id'),
+            'department_id' => $request->input('department_id'),
         ]);
 
         $employee->load('position');

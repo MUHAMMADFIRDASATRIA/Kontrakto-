@@ -155,7 +155,7 @@
                   </td>
                   <td class="col-aksi">
                     <div class="aksi-wrap">
-                      <button class="btn-icon" title="Lihat Detail">
+                      <button class="btn-icon" @click="viewDetail(item)" title="Lihat Detail">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                       </button>
                       <button class="btn-edit-sm" @click="openEditModal(item)" title="Edit">
@@ -340,6 +340,7 @@ const {
     sisaClass,
     statusClass,
     openAddModal,
+    viewDetail,
     openEditModal,
     closeModal,
     saveData,

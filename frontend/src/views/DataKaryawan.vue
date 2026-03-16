@@ -14,7 +14,7 @@
             <span class="bc-sep">/</span>
             <span class="bc-current">Data Karyawan</span>
           </div>
-          <button class="btn-add" @click="openAddModal">
+          <button class="btn-add" @click="router.push('/TambahKaryawan')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Tambah Karyawan
           </button>
@@ -33,8 +33,8 @@
           <div class="filter-bar">
             <div class="filter-select">
               <select v-model="filterDept">
-                <option value="">Departemen</option>
-                <option v-for="d in departemenOptions" :key="d" :value="d">{{ d.name }}</option>
+                <option :value="null">Departemen</option>
+                <option v-for="d in departemenOptions" :key="d.id" :value="d.id">{{ d.name }}</option>
               </select>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
@@ -63,8 +63,7 @@
                 <th class="col-nama">Nama Lengkap</th>
                 <th class="col-email">Email</th>
                 <th class="col-dept">Jabatan</th>
-                <th class="col-aksi1">Aksi</th>
-                <th class="col-aksi2">Aksi</th>
+                <th class="col-aksi">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -85,25 +84,22 @@
                 <td class="col-dept">
                   <span class="dept-badge">{{ item.position?.title }}</span>
                 </td>
-                <td class="col-aksi1">
-                  <button class="btn-edit" @click="openEditModal(item)">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    Edit
-                  </button>
-                </td>
-                <td class="col-aksi2">
-                  <div class="aksi2-wrap">
-                    <button class="btn-delete" @click="confirmDelete(item)">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                <td class="col-aksi">
+                  <div class="aksi-wrap">
+                    <button class="btn-icon" :title="`Lihat detail ${item.name}`" @click="router.push(`/DetailKaryawan/${item.id}`)">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     </button>
-                    <button class="btn-more">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                    <button class="btn-edit-sm" :title="`Edit ${item.name}`" @click="openEditModal(item)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                    <button class="btn-delete-sm" :title="`Hapus ${item.name}`" @click="confirmDelete(item)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                     </button>
                   </div>
                 </td>
               </tr>
               <tr v-if="filteredData.length === 0">
-                <td colspan="6" class="empty-row">Tidak ada data ditemukan.</td>
+                <td colspan="5" class="empty-row">Tidak ada data ditemukan.</td>
               </tr>
             </tbody>
           </table>
@@ -116,7 +112,7 @@
 
             <template v-for="p in visiblePages" :key="p + '-' + Math.random()">
               <span v-if="p === '...'" class="pg-ellipsis">...</span>
-              <button v-else class="pg-num" :class="{ active: p === currentPage }" @click="currentPage = p">{{ p }}</button>
+              <button v-else class="pg-num" :class="{ active: p === currentPage }" @click="currentPage = (p as number)">{{ p }}</button>
             </template>
 
             <button class="pg-btn" :disabled="currentPage === totalPages" @click="currentPage++">
@@ -232,14 +228,16 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppTopbar from '@/components/AppTopbar.vue'
-import { useKaryawan } from '@/composables/useKaryawan.js'
-import { useToast } from '@/composables/useToast.js'
+import { useKaryawan } from '@/composables/useKaryawan'
+import { useToast } from '@/composables/useToast'
 
 const activeNav = ref('karyawan')
+const router = useRouter()
 
 const { toasts, addToast, removeToast } = useToast()
 
@@ -477,8 +475,7 @@ onMounted(()=> {
 .col-nama  { min-width: 220px; }
 .col-email { min-width: 200px; }
 .col-dept  { min-width: 120px; }
-.col-aksi1 { width: 100px; }
-.col-aksi2 { width: 90px; }
+.col-aksi  { width: 140px; }
 
 .td-no    { color: #bbb; font-size: 13px; }
 .td-email { color: #888; font-size: 13.5px; }
@@ -519,58 +516,47 @@ onMounted(()=> {
 }
 
 /* ===== AKSI ===== */
-.btn-edit {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #2e7d5e;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 7px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.15s;
-}
-.btn-edit:hover { background: #256b50; }
-
-.aksi2-wrap {
+.aksi-wrap {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.btn-delete {
+.btn-icon,
+.btn-edit-sm,
+.btn-delete-sm {
   width: 34px;
   height: 34px;
   background: #fff;
-  border: 1.5px solid #e8d0d0;
+  border: 1.5px solid #e2e8e4;
   border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #d05050;
   transition: all 0.15s;
 }
-.btn-delete:hover { background: #fff0f0; border-color: #d05050; }
 
-.btn-more {
-  width: 28px;
-  height: 28px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #aaa;
-  border-radius: 6px;
-  transition: all 0.15s;
+.btn-icon {
+  color: #3b6fdf;
+  border-color: #dbe5ff;
 }
-.btn-more:hover { background: #f0f0f0; color: #666; }
+
+.btn-icon:hover { background: #eef4ff; border-color: #3b6fdf; }
+
+.btn-edit-sm {
+  color: #2e7d5e;
+  border-color: #d6e9e0;
+}
+
+.btn-edit-sm:hover { background: #eaf5f0; border-color: #2e7d5e; }
+
+.btn-delete-sm {
+  color: #d05050;
+  border-color: #e8d0d0;
+}
+
+.btn-delete-sm:hover { background: #fff0f0; border-color: #d05050; }
 
 .empty-row {
   text-align: center;
