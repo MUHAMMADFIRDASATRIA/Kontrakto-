@@ -9,12 +9,15 @@ import {
   parsePkwtCurrency,
   pkwtContractTypeOptions,
   pkwtWorkTypeOptions,
+  type DepartmentForm,
+  type JabatanForm,
   type PkwtDepartment,
   type PkwtEmployee,
   type PkwtForm,
   type PkwtFormErrors,
   type PkwtPosition,
 } from '@/composables/useCreate'
+import type { DepartmentListItem, JabatanListItem } from '@/composables/useList'
 
 interface ApiError {
   message: string
@@ -31,6 +34,7 @@ interface UseEditOptions<TItem, TPayload> {
   loadErrorMessage?: string
   updateErrorMessage?: string
   redirectTo?: string
+  onSuccess?: (payload: TPayload, id: number) => void | Promise<void>
 }
 
 export function useEdit<TItem, TPayload>(options: UseEditOptions<TItem, TPayload>) {
@@ -80,6 +84,11 @@ export function useEdit<TItem, TPayload>(options: UseEditOptions<TItem, TPayload
     isSaving.value = true
     try {
       await api.put(options.updateEndpoint(id), payload)
+
+      if (options.onSuccess) {
+        await options.onSuccess(payload, id)
+      }
+
       addToast(options.successMessage || 'Data berhasil diperbarui', 'success')
 
       if (options.redirectTo) {
@@ -102,6 +111,49 @@ export function useEdit<TItem, TPayload>(options: UseEditOptions<TItem, TPayload
     isSaving,
     loadById,
     updateById,
+  }
+}
+
+export function useDepartmentEdit() {
+  const { isSaving, updateById } = useEdit<DepartmentListItem, DepartmentForm>({
+    listEndpoint: '/Departments',
+    updateEndpoint: (id) => `/Departments/${id}`,
+    getId: (item) => item.id,
+    mapItemToPayload: (item) => ({ name: item.name }),
+    listExtractor: (data) => ((data as { departments?: DepartmentListItem[] })?.departments || []) as DepartmentListItem[],
+    successMessage: 'Departemen berhasil diperbarui',
+    loadErrorMessage: 'Data departemen tidak ditemukan',
+    updateErrorMessage: 'Gagal menyimpan data',
+  })
+
+  const updateDepartment = (id: number, payload: DepartmentForm) => updateById(id, payload)
+
+  return {
+    isSaving,
+    updateDepartment,
+  }
+}
+
+export function useJabatanEdit() {
+  const { isSaving, updateById } = useEdit<JabatanListItem, JabatanForm>({
+    listEndpoint: '/Positions',
+    updateEndpoint: (id) => `/Positions/${id}`,
+    getId: (item) => item.id,
+    mapItemToPayload: (item) => ({
+      title: item.title,
+      department_id: item.department_id,
+    }),
+    listExtractor: (data) => ((data as { positions?: JabatanListItem[] })?.positions || []) as JabatanListItem[],
+    successMessage: 'Jabatan berhasil diperbarui',
+    loadErrorMessage: 'Data jabatan tidak ditemukan',
+    updateErrorMessage: 'Gagal menyimpan jabatan',
+  })
+
+  const updateJabatan = (id: number, payload: JabatanForm) => updateById(id, payload)
+
+  return {
+    isSaving,
+    updateJabatan,
   }
 }
 

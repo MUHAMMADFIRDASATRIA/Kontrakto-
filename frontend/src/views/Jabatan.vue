@@ -105,7 +105,9 @@
           </div>
           <div class="modal-footer">
             <button class="btn-cancel" @click="closeModal">Batal</button>
-            <button class="btn-save" @keyup.enter="saveData" @click="saveData">Simpan</button>
+            <button class="btn-save" @keyup.enter="saveData" @click="saveData" :disabled="isSaving">
+              {{ isSaving ? 'Menyimpan...' : 'Simpan' }}
+            </button>
           </div>
         </div>
       </div>
@@ -128,7 +130,9 @@
           </div>
           <div class="modal-footer">
             <button class="btn-cancel" @click="showDeleteModal = false">Batal</button>
-            <button class="btn-danger" @click="deleteData">Hapus</button>
+            <button class="btn-danger" @click="deleteData" :disabled="isDeleting">
+              {{ isDeleting ? 'Menghapus...' : 'Hapus' }}
+            </button>
           </div>
         </div>
       </div>
@@ -158,39 +162,115 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue'
+<script setup lang="ts">
+import { computed, ref, onMounted } from 'vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppTopbar from '@/components/AppTopbar.vue'
-import { useJabatan } from '@/composables/useJabatan'
+import { useJabatanCreate, type JabatanForm } from '@/composables/useCreate'
+import { useJabatanEdit } from '@/composables/useEdit'
+import { useJabatanList, type JabatanListItem } from '@/composables/useList'
+import { useDeleteJabatan } from '@/composables/useDelete'
 import { useToast } from '@/composables/useToast'
 
 const activeNav = ref('jabatan')
 
 const { toasts, removeToast } = useToast()
+const showModal = ref(false)
+const isEditMode = ref(false)
+const editingId = ref<number | null>(null)
+const deleteTarget = ref<JabatanListItem | null>(null)
+const showDeleteModal = ref(false)
+const form = ref<JabatanForm>({
+  title: '',
+  department_id: null,
+})
 
 const {
-  jabatanList,
+  // jabatanList,
   departmentOptions,
   currentPage,
   totalPages,
   paginatedData,
-  showModal,
-  isEditMode,
-  editingId,
-  form,
   loadData,
-  openAddModal,
-  openEditModal,
-  closeModal,
-  confirmDelete,
-  showDeleteModal,
-  deleteTarget,
-  deleteData,
-  saveData,
   getDepartmentName,
-  handleLogout
-} = useJabatan()
+} = useJabatanList()
+
+const { isSaving: isCreating, createJabatan } = useJabatanCreate()
+const { isSaving: isUpdating, updateJabatan } = useJabatanEdit()
+
+const { 
+  isDeleting, 
+  deleteItem 
+} = useDeleteJabatan()
+
+const isSaving = computed(() => isCreating.value || isUpdating.value)
+
+const openAddModal = () => {
+  showModal.value = true
+  isEditMode.value = false
+  editingId.value = null
+  form.value = {
+    title: '',
+    department_id: null,
+  }
+}
+
+const openEditModal = (item: JabatanListItem) => {
+  showModal.value = true
+  isEditMode.value = true
+  editingId.value = item.id
+  form.value = {
+    title: item.title,
+    department_id: item.department_id,
+  }
+}
+
+const closeModal = () => {
+  showModal.value = false
+  isEditMode.value = false
+  editingId.value = null
+}
+
+const saveData = async () => {
+  if (!form.value.title.trim() || !form.value.department_id) return
+
+  const payload: JabatanForm = {
+    title: form.value.title.trim(),
+    department_id: form.value.department_id,
+  }
+
+  if (isEditMode.value && editingId.value !== null) {
+    const success = await updateJabatan(editingId.value, payload)
+    if (!success) return
+  } else {
+    const created = await createJabatan(payload)
+    if (!created) return
+  }
+
+  closeModal()
+  await loadData()
+}
+
+const confirmDelete = (item: JabatanListItem) => {
+  deleteTarget.value = item
+  showDeleteModal.value = true
+}
+
+const deleteData = async () => {
+  if (!deleteTarget.value) return
+
+  const success = await deleteItem(deleteTarget.value.id)
+  if (!success) return
+
+  showDeleteModal.value = false
+  deleteTarget.value = null
+  await loadData()
+}
+
+const handleLogout = () => {
+  localStorage.removeItem('token')
+  window.location.href = '/'
+}
 
 onMounted(() => {
   loadData()

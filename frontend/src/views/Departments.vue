@@ -177,57 +177,99 @@
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue'
+<script setup lang="ts">
+import { computed, ref, onMounted } from 'vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppTopbar from '@/components/AppTopbar.vue'
-import { useDepartment } from '@/composables/useDepartment'
+import { useDepartmentCreate, type DepartmentForm } from '@/composables/useCreate'
+import { useDepartmentEdit } from '@/composables/useEdit'
+import { useDepartmentList, type DepartmentListItem } from '@/composables/useList'
+import { useDeleteDepartment } from '@/composables/useDelete'
 import { useToast } from '@/composables/useToast'
 
 const activeNav = ref('departemen')
 
-const { toasts, addToast, removeToast } = useToast()
+const { toasts, removeToast } = useToast()
+const showModal = ref(false)
+const isEditing = ref(false)
+const editingId = ref<number | null>(null)
+const showDeleteModal = ref(false)
+const deleteTarget = ref<number | null>(null)
+const deleteTargetName = ref('')
+const form = ref<DepartmentForm>({ name: '' })
 
 const {
-    showModal,
-    isEditing,
-    form,
-    departemenList,
+  items: departemenList,
     isLoading,
-    isSaving,
-    isDeleting,
-    openAddModal,
-    openEditModal,
-    closeModal,
-    saveData: _saveData,
     loadData,
     currentPage,
     perPage,
     totalPages,
     paginatedData,
-    showDeleteModal,
-    deleteTargetName,
-    confirmDelete,
-    deleteData: _deleteData,
-    handleLogout
-} = useDepartment()
+} = useDepartmentList()
+
+const { isSaving: isCreating, createDepartment } = useDepartmentCreate()
+const { isSaving: isUpdating, updateDepartment } = useDepartmentEdit()
+const { isDeleting, deleteItem } = useDeleteDepartment()
+const isSaving = computed(() => isCreating.value || isUpdating.value)
+
+const openAddModal = () => {
+  isEditing.value = false
+  editingId.value = null
+  form.value = { name: '' }
+  showModal.value = true
+}
+
+const openEditModal = (item: DepartmentListItem) => {
+  isEditing.value = true
+  editingId.value = item.id
+  form.value = { name: item.name }
+  showModal.value = true
+}
+
+const closeModal = () => {
+  showModal.value = false
+}
 
 const saveData = async () => {
-  const wasEditing = isEditing.value
-  await _saveData()
-  if (!showModal.value) {
-    addToast(
-      wasEditing ? 'Departemen berhasil diperbarui' : 'Departemen berhasil ditambahkan',
-      'success'
-    )
+  if (!form.value.name.trim()) {
+    window.alert('Nama departemen tidak boleh kosong')
+    return
   }
+
+  const payload: DepartmentForm = { name: form.value.name.trim() }
+
+  if (isEditing.value && editingId.value !== null) {
+    const success = await updateDepartment(editingId.value, payload)
+    if (!success) return
+  } else {
+    const created = await createDepartment(payload)
+    if (!created) return
+  }
+
+  showModal.value = false
+  await loadData()
+}
+
+const confirmDelete = (item: DepartmentListItem) => {
+  deleteTarget.value = item.id
+  deleteTargetName.value = item.name
+  showDeleteModal.value = true
 }
 
 const deleteData = async () => {
-  await _deleteData()
-  if (!showDeleteModal.value) {
-    addToast('Departemen berhasil dihapus', 'success')
-  }
+  if (deleteTarget.value === null) return
+
+  const success = await deleteItem(deleteTarget.value)
+  if (!success) return
+
+  showDeleteModal.value = false
+  await loadData()
+}
+
+const handleLogout = () => {
+  localStorage.removeItem('token')
+  window.location.href = '/'
 }
 
 onMounted(() => {

@@ -309,6 +309,7 @@ import { useRouter } from 'vue-router'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppTopbar from '@/components/AppTopbar.vue'
 import { usePKWT } from '@/composables/usePKWT'
+import { useDeletePKWT } from '@/composables/useDelete'
 
 const router = useRouter()
 
@@ -336,7 +337,6 @@ const {
     showDeleteModal,
     deleteTarget,
     deleteTargetName,
-    isDeleting,
     toasts,
     removeToast,
     sisaClass,
@@ -347,10 +347,25 @@ const {
     closeModal,
     saveData,
     confirmDelete,
-    deleteData,
     handleLogout,
-    activeNav
+    activeNav,
+    loadData,
 } = usePKWT()
+
+  const {
+    isDeleting,
+    deleteItem,
+  } = useDeletePKWT()
+
+  const deleteData = async () => {
+    if (deleteTarget.value === null) return
+
+    const success = await deleteItem(deleteTarget.value)
+    if (!success) return
+
+    showDeleteModal.value = false
+    await loadData()
+  }
 
 </script>
 

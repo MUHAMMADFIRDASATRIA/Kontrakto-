@@ -1,11 +1,21 @@
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import api from '@/services/api'
+/*
+Deprecated file.
 
-interface ApiError {
-    message: string
-    [key: string]: unknown
-}
+This wrapper is intentionally no longer used.
+Active CRUD logic now lives in:
+- frontend/src/composables/useCreate.ts
+- frontend/src/composables/useEdit.ts
+- frontend/src/composables/useList.ts
+- frontend/src/composables/useShow.ts
+
+Previous implementation retained below for temporary reference only.
+
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useCreate } from '@/composables/useCreate'
+import { useDelete } from '@/composables/useDelete'
+import { useEdit } from '@/composables/useEdit'
+import { useList } from '@/composables/useList'
 
 interface Department {
     id: number
@@ -13,133 +23,155 @@ interface Department {
     [key: string]: unknown
 }
 
+interface DepartmentForm {
+    name: string
+}
+
 export function useDepartment() {
     const router = useRouter()
-    const isLoading  = ref(false)
-    const isSaving   = ref(false)
-    const isDeleting = ref(false)
-    const showModal  = ref(false)
-    const isEditing  = ref(false)
-    const editingId  = ref<number | null>(null)
-    const showDeleteModal  = ref(false)
-    const deleteTarget     = ref<number | null>(null)
+    const showModal = ref(false)
+    const isEditing = ref(false)
+    const editingId = ref<number | null>(null)
+    const showDeleteModal = ref(false)
+    const deleteTarget = ref<number | null>(null)
     const deleteTargetName = ref('')
-    const currentPage = ref(1)
-    const perPage     = 10
-    const form = ref({ name: '' })
-    const departemenList = ref<Department[]>([])
+    const form = ref<DepartmentForm>({ name: '' })
+    const isSaving = ref(false)
 
-    const totalPages = computed(() =>
-        Math.max(1, Math.ceil(departemenList.value.length / perPage))
-    )
-
-    const paginatedData = computed(() => {
-        const start = (currentPage.value - 1) * perPage
-        return departemenList.value.slice(start, start + perPage)
+    const {
+        isLoading,
+        items: departemenList,
+        currentPage,
+        perPage,
+        totalPages,
+        paginatedData,
+        loadData,
+    } = useList<Department>({
+        endpoint: '/Departments',
+        perPage: 10,
+        extractor: (data) => ((data as { departments?: Department[] })?.departments || []) as Department[],
+        loadErrorMessage: 'Gagal memuat data departemen',
     })
 
-    const loadData = async () => {
-        isLoading.value = true
-        try {
-            const response = await api.get('/Departments')
-            departemenList.value = response.data.departments ?? response.data
-        } catch (error) {
-            const apiError = error as ApiError
-            alert(apiError.message || 'Gagal memuat data departemen')
-        } finally {
-            isLoading.value = false
-        }
+    const { createItem } = useCreate<DepartmentForm>({
+        createEndpoint: '/Departments',
+        successMessage: 'Departemen berhasil ditambahkan',
+        errorMessage: 'Gagal menyimpan data',
+    })
+
+    const { updateById } = useEdit<Department, DepartmentForm>({
+        listEndpoint: '/Departments',
+        updateEndpoint: (id) => `/Departments/${id}`,
+        getId: (item) => item.id,
+        mapItemToPayload: (item) => ({ name: item.name }),
+        listExtractor: (data) => ((data as { departments?: Department[] })?.departments || []) as Department[],
+        successMessage: 'Departemen berhasil diperbarui',
+        loadErrorMessage: 'Data departemen tidak ditemukan',
+        updateErrorMessage: 'Gagal menyimpan data',
+    })
+
+    const { isDeleting, deleteItem } = useDelete<number>({
+        deleteEndpoint: (id) => `/Departments/${id}`,
+        successMessage: 'Departemen berhasil dihapus',
+        errorMessage: 'Gagal menghapus data',
+    })
+
+    const resetForm = () => {
+        form.value = { name: '' }
     }
 
+    const buildPayload = (): DepartmentForm => ({
+        name: form.value.name.trim(),
+    })
+
     const openAddModal = () => {
-        isEditing.value  = false
-        editingId.value  = null
-        form.value       = { name: '' }
-        showModal.value  = true
+        isEditing.value = false
+        editingId.value = null
+        resetForm()
+        showModal.value = true
     }
 
     const openEditModal = (item: Department) => {
-        isEditing.value  = true
-        editingId.value  = item.id
-        form.value       = { name: item.name }
-        showModal.value  = true
+        isEditing.value = true
+        editingId.value = item.id
+        form.value = { name: item.name }
+        showModal.value = true
     }
 
-    const closeModal = () => { showModal.value = false }
+    const closeModal = () => {
+        showModal.value = false
+    }
 
     const saveData = async () => {
         if (!form.value.name.trim()) {
-            alert('Nama departemen tidak boleh kosong')
+            window.alert('Nama departemen tidak boleh kosong')
             return
         }
+
         isSaving.value = true
         try {
-            if (isEditing.value && editingId.value) {
-                await api.put(`/Departments/${editingId.value}`, form.value)
+            const payload = buildPayload()
+
+            if (isEditing.value && editingId.value !== null) {
+                const success = await updateById(editingId.value, payload)
+                if (!success) return
             } else {
-                await api.post('/Departments', form.value)
+                const created = await createItem(payload)
+                if (!created) return
             }
+
             showModal.value = false
             await loadData()
-        } catch (error) {
-            const apiError = error as ApiError
-            alert(apiError.message || 'Gagal menyimpan data')
         } finally {
             isSaving.value = false
         }
     }
 
     const confirmDelete = (item: Department) => {
-        deleteTarget.value     = item.id
+        deleteTarget.value = item.id
         deleteTargetName.value = item.name
-        showDeleteModal.value  = true
+        showDeleteModal.value = true
     }
 
     const deleteData = async () => {
-        isDeleting.value = true
-        try {
-            await api.delete(`/Departments/${deleteTarget.value}`)
-            showDeleteModal.value = false
-            await loadData()
-            if (currentPage.value > totalPages.value) {
-                currentPage.value = totalPages.value
-            }
-        } catch (error) {
-            const apiError = error as ApiError
-            alert(apiError.message || 'Gagal menghapus data')
-        } finally {
-            isDeleting.value = false
-        }
+        if (deleteTarget.value === null) return
+
+        const success = await deleteItem(deleteTarget.value)
+        if (!success) return
+
+        showDeleteModal.value = false
+        await loadData()
     }
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        router.push('/');
-    };
+        localStorage.removeItem('token')
+        router.push('/')
+    }
 
     return {
-        isLoading, 
-        isSaving, 
+        isLoading,
+        isSaving,
         isDeleting,
-        showModal, 
-        isEditing, 
-        editingId, 
+        showModal,
+        isEditing,
+        editingId,
         form,
         departemenList,
-        showDeleteModal, 
-        deleteTarget, 
+        showDeleteModal,
+        deleteTarget,
         deleteTargetName,
-        currentPage, 
-        perPage, 
-        totalPages, 
+        currentPage,
+        perPage,
+        totalPages,
         paginatedData,
-        loadData, 
-        openAddModal, 
-        openEditModal, 
+        loadData,
+        openAddModal,
+        openEditModal,
         closeModal,
-        saveData, 
-        confirmDelete, 
+        saveData,
+        confirmDelete,
         handleLogout,
         deleteData,
     }
 }
+*/

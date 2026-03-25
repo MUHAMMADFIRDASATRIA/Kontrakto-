@@ -235,6 +235,7 @@ import AppSidebar from '@/components/AppSidebar.vue'
 import AppTopbar from '@/components/AppTopbar.vue'
 import { useKaryawan } from '@/composables/useKaryawan'
 import { useToast } from '@/composables/useToast'
+import { useDeleteKaryawan } from '@/composables/useDelete'
 
 const activeNav = ref('karyawan')
 const router = useRouter()
@@ -264,13 +265,26 @@ const {
   showDeleteModal,
   deleteTarget,
   deleteTargetName,
-  isDeleting,
   confirmDelete,
-  deleteData,
   saveData,
   loadData,
   handleLogout,
 } = useKaryawan()
+
+const {
+  isDeleting,
+  deleteItem
+} = useDeleteKaryawan()
+
+const deleteData = async () => {
+  if (deleteTarget.value === null) return
+
+  const success = await deleteItem(deleteTarget.value)
+  if (!success) return
+
+  showDeleteModal.value = false
+  await loadData()
+}
 
 onMounted(()=> {
   loadData()

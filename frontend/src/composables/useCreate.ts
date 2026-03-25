@@ -8,6 +8,84 @@ interface ApiError {
     [key: string]: unknown
 }
 
+interface UseCreateOptions<TPayload, TResponse> {
+    createEndpoint: string
+    successMessage?: string
+    errorMessage?: string
+    onSuccess?: (responseData: TResponse, payload: TPayload) => void | Promise<void>
+}
+
+export interface DepartmentForm {
+    name: string
+}
+
+export interface JabatanForm {
+    title: string
+    department_id: number | null
+}
+
+export function useCreate<TPayload, TResponse = unknown>(options: UseCreateOptions<TPayload, TResponse>) {
+    const { addToast } = useToast()
+    const isSaving = ref(false)
+
+    const createItem = async (payload: TPayload): Promise<TResponse | null> => {
+        isSaving.value = true
+        try {
+            const response = await api.post(options.createEndpoint, payload)
+            const responseData = response.data as TResponse
+
+            if (options.onSuccess) {
+                await options.onSuccess(responseData, payload)
+            }
+
+            addToast(options.successMessage || 'Data berhasil ditambahkan', 'success')
+            return responseData
+        } catch (error) {
+            const err = error as ApiError & { response?: { data?: ApiError } }
+            const message = err.response?.data?.message || err.message || options.errorMessage || 'Gagal menyimpan data'
+            addToast(message, 'error')
+            return null
+        } finally {
+            isSaving.value = false
+        }
+    }
+
+    return {
+        isSaving,
+        createItem,
+    }
+}
+
+export function useDepartmentCreate() {
+    const { isSaving, createItem } = useCreate<DepartmentForm>({
+        createEndpoint: '/Departments',
+        successMessage: 'Departemen berhasil ditambahkan',
+        errorMessage: 'Gagal menyimpan data',
+    })
+
+    const createDepartment = (payload: DepartmentForm) => createItem(payload)
+
+    return {
+        isSaving,
+        createDepartment,
+    }
+}
+
+export function useJabatanCreate() {
+    const { isSaving, createItem } = useCreate<JabatanForm>({
+        createEndpoint: '/Positions',
+        successMessage: 'Jabatan berhasil ditambahkan',
+        errorMessage: 'Gagal menyimpan jabatan',
+    })
+
+    const createJabatan = (payload: JabatanForm) => createItem(payload)
+
+    return {
+        isSaving,
+        createJabatan,
+    }
+}
+
 interface Jabatan {
     id: number
     title: string
