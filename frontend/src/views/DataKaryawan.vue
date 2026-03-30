@@ -23,7 +23,7 @@
         <!-- Title -->
         <div class="title-block">
           <h1 class="page-title">Data Karyawan</h1>
-          <p class="page-sub">{{ karyawanList.length }} Karyawan</p>
+          <p class="page-sub">{{ paginatedData.length }} Karyawan</p>
         </div>
 
         <!-- Table Card -->
@@ -34,7 +34,7 @@
             <div class="filter-select">
               <select v-model="filterDept">
                 <option :value="null">Departemen</option>
-                <option v-for="d in departemenOptions" :key="d.id" :value="d.id">{{ d.name }}</option>
+                <option v-for="d in departmentOptions" :key="d.id" :value="d.id">{{ d.name }}</option>
               </select>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
@@ -92,13 +92,13 @@
                     <button class="btn-edit-sm" :title="`Edit ${item.name}`" @click="router.push(`/Karyawan/${item.id}/edit`)">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     </button>
-                    <button class="btn-delete-sm" :title="`Hapus ${item.name}`" @click="confirmDelete(item)">
+                    <button class="btn-delete-sm" :title="`Hapus ${item.name}`" @click="confirmDelete(item.id, item.name)">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                     </button>
                   </div>
                 </td>
               </tr>
-              <tr v-if="filteredData.length === 0">
+              <tr v-if="paginatedData.length === 0">
                 <td colspan="5" class="empty-row">Tidak ada data ditemukan.</td>
               </tr>
             </tbody>
@@ -134,7 +134,7 @@
     </div>
 
     <!-- MODAL: Tambah / Edit -->
-    <Teleport to="body">
+    <!-- <Teleport to="body">
       <div class="modal-overlay" v-if="showModal" @click.self="closeModal">
         <div class="modal">
           <div class="modal-header">
@@ -177,7 +177,7 @@
           </div>
         </div>
       </div>
-    </Teleport>
+    </Teleport> -->
 
     <!-- MODAL: Konfirmasi Hapus -->
     <Teleport to="body">
@@ -196,7 +196,7 @@
           </div>
           <div class="modal-footer">
             <button class="btn-cancel" :disabled="isDeleting" @click="showDeleteModal = false">Batal</button>
-            <button class="btn-danger" :disabled="isDeleting" @click="deleteData">
+            <button class="btn-danger" :disabled="isDeleting" @click="executeDelete">
               <svg v-if="isDeleting" class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a10 10 0 0 1 10 10" /></svg>
               {{ isDeleting ? 'Menghapus...' : 'Hapus' }}
             </button>
@@ -229,65 +229,88 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppTopbar from '@/components/AppTopbar.vue'
 import { useKaryawan } from '@/composables/useKaryawan'
 import { useToast } from '@/composables/useToast'
 import { useDeleteKaryawan } from '@/composables/useDelete'
+import { useKaryawanList } from '@/composables/useList'
 
 const activeNav = ref('karyawan')
 const router = useRouter()
 
-const { toasts, addToast, removeToast } = useToast()
+const { toasts, removeToast } = useToast()
 
 const {
-  karyawanList,
-  filterDept,
-  sortBy,
-  searchQuery,
-  filteredData,
-  departemenOptions,
-  showModal,
-  isEditing,
-  form,
-  paginatedData,
-  currentPage,
-  perPage,
-  visiblePages,
-  jabatanList,
-  totalPages,
-  isSaving,
-  openAddModal,
-  openEditModal,
-  closeModal,
-  showDeleteModal,
-  deleteTarget,
-  deleteTargetName,
-  confirmDelete,
-  saveData,
-  loadData,
   handleLogout,
 } = useKaryawan()
 
 const {
+  departmentOptions,
+  filterDept,
+  sortBy,
+  searchQuery,
+  paginatedData,
+  currentPage,
+  perPage,
+  totalPages,
+  loadAllData
+} = useKaryawanList()
+
+const getDepartmentName = (departmentId: number) => {
+  const department = departmentOptions.value.find((item) => item.id === departmentId)
+  return department ? department.name : 'Unknown'
+}
+
+watch([searchQuery, filterDept, sortBy], () => {
+  currentPage.value = 1
+  loadAllData()
+})
+
+const visiblePages = computed(() => {
+  const total = totalPages.value
+  const current = currentPage.value
+  const pages: (number | string)[] = []
+
+  if (total <= 7) {
+    for (let index = 1; index <= total; index += 1) pages.push(index)
+    return pages
+  }
+
+  pages.push(1)
+  if (current > 3) pages.push('...')
+  for (let index = Math.max(2, current - 1); index <= Math.min(total - 1, current + 1); index += 1) {
+    pages.push(index)
+  }
+  if (current < total - 2) pages.push('...')
+  pages.push(total)
+
+  return pages
+})
+
+const {
+  showDeleteModal,
+  deleteTargetName,
+  confirmDelete,
+  executeDelete,
+  deleteTarget,
   isDeleting,
-  deleteItem
-} = useDeleteKaryawan()
+} = useDeleteKaryawan(loadAllData)
 
 const deleteData = async () => {
   if (deleteTarget.value === null) return
 
-  const success = await deleteItem(deleteTarget.value)
+  const success = await executeDelete()
   if (!success) return
 
   showDeleteModal.value = false
-  await loadData()
+  await loadAllData()
 }
 
 onMounted(()=> {
-  loadData()
+  loadAllData()
 })
 </script>
 

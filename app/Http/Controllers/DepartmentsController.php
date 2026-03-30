@@ -19,11 +19,19 @@ class DepartmentsController extends Controller
     public function showDepartments()
     {
         $user = Auth::user();
-        $departments = Departments::where('user_id', $user->id)->get();
+        $perPage = request()->get('per_page', 10);
+
+        $departments = Departments::where('user_id', $user->id)->paginate($perPage);
 
         return response()->json([
             'message' => 'Departments retrieved successfully',
-            'departments' => $departments
+            'data' => $departments->items(),
+            'meta' => [
+                'current_page' => $departments->currentPage(),
+                'last_page' => $departments->lastPage(),
+                'per_page' => $departments->perPage(),
+                'total' => $departments->total(),
+            ]
         ],200);
     }
 

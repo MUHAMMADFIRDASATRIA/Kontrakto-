@@ -17,17 +17,30 @@ interface UseDeleteOptions<Target> {
 export function useDeleteAction<Target>(options: UseDeleteOptions<Target>) {
 	const { addToast } = useToast()
 	const isDeleting = ref(false)
+	const showDeleteModal = ref(false)
+	const deleteTarget = ref<Target | null>(null)
+	const deleteTargetName = ref('')
 
-	const deleteItem = async (target: Target): Promise<boolean> => {
+	const confirmDelete = (target: Target, name: string) => {
+		deleteTarget.value = target
+		deleteTargetName.value = name
+		showDeleteModal.value = true
+	}
+
+	const executeDelete = async (): Promise<boolean> => {
+		if (!deleteTarget.value) return false
+
 		isDeleting.value = true
 		try {
-			await api.delete(options.deleteEndpoint(target))
+			await api.delete(options.deleteEndpoint(deleteTarget.value))
 
 			if (options.onSuccess) {
-				await options.onSuccess(target)
+				await options.onSuccess(deleteTarget.value)
 			}
-
 			addToast(options.successMessage || 'Data berhasil dihapus', 'success')
+
+			showDeleteModal.value = false
+			deleteTarget.value = null
 			return true
 		} catch (error) {
 			const err = error as ApiError & { response?: { data?: ApiError } }
@@ -39,9 +52,20 @@ export function useDeleteAction<Target>(options: UseDeleteOptions<Target>) {
 		}
 	}
 
+	const deleteItem = async (target: Target): Promise<boolean> => {
+		if (options.onSuccess){
+			await options.onSuccess(target)
+		}
+		return true
+	}
+
 	return {
 		isDeleting,
-		deleteItem,
+		showDeleteModal,
+		deleteTarget,
+		deleteTargetName,
+		confirmDelete,
+		executeDelete,
 	}
 }
 
@@ -52,79 +76,53 @@ interface DeleteConfig {
 }
 
 function createDeleteAction(config: DeleteConfig) {
-	return function (){
-		const { isDeleting, deleteItem } = useDeleteAction<number>({
+	return function (onSuccess?: (id: number) => void | Promise<void>) {
+		return useDeleteAction<number>({
 			deleteEndpoint: (id) => `${config.endpoint}/${id}`,
 			successMessage: config.successMessage,
 			errorMessage: config.errorMessage,
+			onSuccess,
 		})
-
-		return {
-			isDeleting,
-			deleteItem,
-		}
 	}
 }
 
 
-export const useDeleteDepartment = createDeleteAction({
+const useDeleteDepartmentAction = createDeleteAction({
 	endpoint: '/Departments',
 	successMessage: 'Departemen berhasil dihapus',
 	errorMessage: 'Gagal menghapus data',
 })
 
-export const useDeleteJabatan = createDeleteAction({
+const useDeleteJabatanAction = createDeleteAction({
 	endpoint: '/Positions',
 	successMessage: 'Jabatan berhasil dihapus',
 	errorMessage: 'Gagal menghapus jabatan',
 })
 
-export const useDeleteKaryawan = createDeleteAction({
+const useDeleteKaryawanAction = createDeleteAction({
 	endpoint: '/Employees',
 	successMessage: 'Karyawan berhasil dihapus',
 	errorMessage: 'Gagal menghapus karyawan',
 })
 
-export const useDeletePKWT = createDeleteAction({
+const useDeletePKWTAction = createDeleteAction({
 	endpoint: '/Pkwts',
 	successMessage: 'PKWT berhasil dihapus',
 	errorMessage: 'Gagal menghapus PKWT',
 })
 
-// interface UseDeleteOptions<Target> {
-// 	deleteEndpoint: (target: Target) => string
-// 	successMessage?: string
-// 	errorMessage?: string
-// 	onSuccess?: (target: Target) => void | Promise<void>
-// }
+export function useDeleteDepartment(onSuccess?: (id: number) => void | Promise<void>) {
+	return useDeleteDepartmentAction(onSuccess)
+}
 
-// export function useDelete<Target>(options: UseDeleteOptions<Target>) {
-// 	const { addToast } = useToast()
-// 	const isDeleting = ref(false)
+export function useDeleteJabatan(onSuccess?: (id: number) => void | Promise<void>) {
+	return useDeleteJabatanAction(onSuccess)
+}
 
-// 	const deleteItem = async (target: Target): Promise<boolean> => {
-// 		isDeleting.value = true
-// 		try {
-// 			await api.delete(options.deleteEndpoint(target))
+export function useDeleteKaryawan(onSuccess?: (id: number) => void | Promise<void>) {
+	return useDeleteKaryawanAction(onSuccess)
+}
 
-// 			if (options.onSuccess) {
-// 				await options.onSuccess(target)
-// 			}
-
-// 			addToast(options.successMessage || 'Data berhasil dihapus', 'success')
-// 			return true
-// 		} catch (error) {
-// 			const err = error as ApiError & { response?: { data?: ApiError } }
-// 			const message = err.response?.data?.message || err.message || options.errorMessage || 'Gagal menghapus data'
-// 			addToast(message, 'error')
-// 			return false
-// 		} finally {
-// 			isDeleting.value = false
-// 		}
-// 	}
-
-// 	return {
-// 		isDeleting,
-// 		deleteItem,
-// 	}
-// }
+export function useDeletePKWT(onSuccess?: (id: number) => void | Promise<void>) {
+	return useDeletePKWTAction(onSuccess)
+}

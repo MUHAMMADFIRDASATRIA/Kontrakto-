@@ -15,6 +15,25 @@ interface UseCreateOptions<TPayload, TResponse> {
     onSuccess?: (responseData: TResponse, payload: TPayload) => void | Promise<void>
 }
 
+interface KaryawanForm {
+    namaLengkap: string
+    tanggalLahir: string
+    jenisKelamin: string
+    statusPernikahan: string
+    agama: string
+    pendidikan: string
+    alamat: string
+    email: string
+    telp: string
+    nik: string
+    linkedin: string
+    kontakDarurat: string
+    telpDarurat: string
+    departemen: string
+    jabatan: string
+
+}
+
 export interface DepartmentForm {
     name: string
 }
@@ -27,6 +46,14 @@ export interface JabatanForm {
 export function useCreate<TPayload, TResponse = unknown>(options: UseCreateOptions<TPayload, TResponse>) {
     const { addToast } = useToast()
     const isSaving = ref(false)
+    const showModal = ref(false)
+
+    const openModal = () => {
+        showModal.value = true
+    }
+    const closeModal = () => {
+        showModal.value = false
+    }
 
     const createItem = async (payload: TPayload): Promise<TResponse | null> => {
         isSaving.value = true
@@ -37,7 +64,8 @@ export function useCreate<TPayload, TResponse = unknown>(options: UseCreateOptio
             if (options.onSuccess) {
                 await options.onSuccess(responseData, payload)
             }
-
+            
+            closeModal()
             addToast(options.successMessage || 'Data berhasil ditambahkan', 'success')
             return responseData
         } catch (error) {
@@ -53,14 +81,24 @@ export function useCreate<TPayload, TResponse = unknown>(options: UseCreateOptio
     return {
         isSaving,
         createItem,
+        showModal,
+        openModal,
+        closeModal,
     }
 }
 
-export function useDepartmentCreate() {
-    const { isSaving, createItem } = useCreate<DepartmentForm>({
+export function useDepartmentCreate(onSuccess?: () => void | Promise<void>) {
+    const { 
+        isSaving, 
+        createItem,
+        showModal,
+        openModal,
+        closeModal,
+    } = useCreate<DepartmentForm>({
         createEndpoint: '/Departments',
         successMessage: 'Departemen berhasil ditambahkan',
         errorMessage: 'Gagal menyimpan data',
+        onSuccess
     })
 
     const createDepartment = (payload: DepartmentForm) => createItem(payload)
@@ -68,14 +106,24 @@ export function useDepartmentCreate() {
     return {
         isSaving,
         createDepartment,
+        showModal,
+        openModal,
+        closeModal,
     }
 }
 
-export function useJabatanCreate() {
-    const { isSaving, createItem } = useCreate<JabatanForm>({
+export function useJabatanCreate(onSuccess?: () => void | Promise<void>) {
+    const { 
+        isSaving, 
+        createItem,
+        showModal,
+        openModal,
+        closeModal,
+    } = useCreate<JabatanForm>({
         createEndpoint: '/Positions',
         successMessage: 'Jabatan berhasil ditambahkan',
         errorMessage: 'Gagal menyimpan jabatan',
+        onSuccess
     })
 
     const createJabatan = (payload: JabatanForm) => createItem(payload)
@@ -83,6 +131,9 @@ export function useJabatanCreate() {
     return {
         isSaving,
         createJabatan,
+        showModal,
+        openModal,
+        closeModal,
     }
 }
 
@@ -114,19 +165,22 @@ interface CreateEmployeePayload {
     department_id: number | null
 }
 
-const createInitialFormData = (): CreateEmployeePayload => ({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    gender: '',
-    location_of_birth: '',
+const createInitialFormData = (): KaryawanForm => ({
+    namaLengkap: '',
+    tanggalLahir: '',
+    jenisKelamin: '',
+    statusPernikahan: '',
     agama: '',
-    marital_status: '',
-    date_of_birth: '',
-    education: '',
-    position_id: null,
-    department_id: null,
+    pendidikan: '',
+    alamat: '',
+    email: '',
+    telp: '',
+    nik: '',
+    linkedin: '',
+    kontakDarurat: '',
+    telpDarurat: '',
+    departemen: '',
+    jabatan: '',
 })
 
 export interface PkwtEmployee {
@@ -245,14 +299,48 @@ export function buildPkwtPayload(form: PkwtForm, signedContractFile: File | null
 
 export function useCreateKaryawan() {
     const router = useRouter()
-    const isSaving = ref(false)
     const { toasts, addToast, removeToast } = useToast()
+
+    const {isSaving, createItem } = useCreate<CreateEmployeePayload>({
+        createEndpoint: '/Employees',
+        successMessage: 'Karyawan berhasil ditambahkan',
+        errorMessage: 'Gagal menambahkan karyawan',
+    })
+
     const isLoading = ref(false)
 
-    const formData = ref<CreateEmployeePayload>(createInitialFormData())
+    const formData = ref<KaryawanForm>(createInitialFormData())
 
     const jabatanList = ref<Jabatan[]>([])
     const departmentList = ref<Department[]>([])
+
+    const mapGender = (jenisKelamin: string): string => {
+        if (jenisKelamin.toLowerCase() === 'laki-laki' || jenisKelamin.toLowerCase() === 'male') return 'Male'
+        if (jenisKelamin.toLowerCase() === 'perempuan' || jenisKelamin.toLowerCase() === 'female') return 'Female'
+        return jenisKelamin
+    }
+
+    const mapMaritalStatus = (status: string): string => {
+        if (status.toLowerCase() === 'menikah' || status.toLowerCase() === 'married') return 'Married'
+        if (status.toLowerCase() === 'belum menikah' || status.toLowerCase() === 'single') return 'Single'
+        if (status.toLowerCase() === 'cerai' || status.toLowerCase() === 'divorced') return 'Divorced'
+        return status
+    }
+    
+    const mapFormToPayload = (form: KaryawanForm) => ({
+        name: form.namaLengkap.trim(),
+        email: form.email.trim(),
+        phone: form.telp.trim(),
+        address: form.alamat.trim(),
+        gender: mapGender(form.jenisKelamin),
+        location_of_birth: '',
+        agama: form.agama,
+        marital_status: mapMaritalStatus(form.statusPernikahan),
+        date_of_birth: form.tanggalLahir,
+        education: form.pendidikan,
+        position_id: Number(form.jabatan),
+        department_id: Number(form.departemen),
+    })
 
     const getDepartmentName = (deptId: number) => {
         const dept = departmentList.value.find(d => d.id === deptId)
@@ -272,8 +360,8 @@ export function useCreateKaryawan() {
                 api.get('/Departments'),
             ])
 
-            jabatanList.value = posRes.data.positions || posRes.data || []
-            departmentList.value = deptRes.data.departments || deptRes.data || []
+            jabatanList.value = posRes.data.data || []
+            departmentList.value = deptRes.data.data || []
         } catch (error) {
             console.error('Error loading create form data:', error)
             addToast('Gagal memuat data departemen dan jabatan', 'error')
@@ -286,19 +374,15 @@ export function useCreateKaryawan() {
         formData.value = createInitialFormData()
     }
 
-    const saveData = async () => {
-        isSaving.value = true
-        try {
-            await api.post('/Employees', formData.value)
-            addToast('Karyawan berhasil ditambahkan', 'success')
+    const saveData = async (form: KaryawanForm) => {
+        const payload = mapFormToPayload(form)
+
+        const result = await createItem(payload)
+        if (!result) {
             router.push('/Karyawan')
-        } catch (error) {
-            const err = error as ApiError & { response?: { data?: ApiError } }
-            const message = err.response?.data?.message || err.message || 'Gagal menambahkan karyawan'
-            addToast(message, 'error')
-        } finally {
-            isSaving.value = false
         }
+
+        return result
     }
 
     const handleLogout = () => {
@@ -319,6 +403,7 @@ export function useCreateKaryawan() {
         loadData,
         resetFormData,
         saveData,
+        mapFormToPayload,
         handleLogout
     }
 }

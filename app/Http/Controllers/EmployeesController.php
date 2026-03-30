@@ -18,16 +18,51 @@ class EmployeesController extends Controller
         $this->middleware('auth');
     }
 
-    public function showEmployees()
+    public function showEmployees(Request $request)
     {
         $user = Auth::user();
-        $depertments = Departments::where('user_id', $user->id)->get();
-        $positions = Positions::whereIn('department_id', $depertments->pluck('id'))->get();
-        $employees = Employees::with('position')->whereIn('position_id', $positions->pluck('id'))->get();
+        $perPage = $request->get('per_page', 10);
+
+        $query = Employees::with('position.department')
+                    ->whereHas('position.department', function ($q) use ($user) {
+                        $q->where('user_id', $user->id);
+                    });
+        
+        if ($request->search){
+            $search = strtolower($request->search);
+            $query->where(function($q) use ($search){
+                $q->whereRaw('LOWER(name) LIKE ?', ["%{$search}%"])
+                ->orWhereRaw('LOWER(email) LIKE ?', ["%{$search}%"]);
+            }); 
+        }
+
+        if ($request->department_id) {
+            $query->whereHas('position', function ($q) use ($request) {
+                $q->where('department_id', $request->department_id);
+            });
+        }
+
+        if ($request->sort === 'nama-asc') {
+            $query->orderBy('name', 'asc');
+        } elseif ($request->sort === 'nama-desc') {
+            $query->orderBy('name', 'desc');
+        } elseif ($request->sort === 'dept') {
+            $query->join('positions', 'employees.position_id', '=', 'positions.id')
+                  ->join('departments', 'positions.department_id', '=', 'departments.id')
+                  ->orderBy('departments.name', 'asc');
+        }
+
+        $employees = $query->paginate($perPage);
 
         return response()->json([
             'message' => 'Employees retrieved successfully',
-            'employees' => $employees
+            'data' => $employees->items(),
+            'meta' => [
+                'current_page' => $employees->currentPage(),
+                'last_page' => $employees->lastPage(),
+                'per_page' => $employees->perPage(),
+                'total' => $employees->total(),
+            ]
         ], 200);
     }
     public function createEmployee(Request $request)
@@ -66,7 +101,7 @@ class EmployeesController extends Controller
             'department_id' => $request->input('department_id'),
         ]);
 
-        $employee->load('position');
+        $employee->load('position.department');
 
         return response()->json([
             'message' => 'Employee created successfully',
@@ -118,7 +153,7 @@ class EmployeesController extends Controller
         ];
 
         $employee->update($data);
-        $employee->load('position');
+        $employee->load('position.department   ');
 
         return response()->json([
             'message' => 'Employee updated successfully',

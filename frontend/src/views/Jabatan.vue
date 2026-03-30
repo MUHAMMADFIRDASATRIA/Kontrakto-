@@ -21,7 +21,7 @@
         <!-- Page Header -->
         <div class="page-header">
           <h1 class="page-title">Kelola Jabatan</h1>
-          <button class="btn-add" @click="openAddModal">
+          <button class="btn-add" @click="openModal">
             Tambah Jabatan
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </button>
@@ -51,7 +51,7 @@
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                       Edit
                     </button>
-                    <button class="btn-delete" @click="confirmDelete(item)">
+                    <button class="btn-delete" @click="confirmDelete(item.id, item.title   )">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                     </button>
                   </div>
@@ -99,7 +99,7 @@
               <label>Departemen</label>
               <select v-model="form.department_id">
                 <option :value="null" disabled>Pilih departemen</option>
-                <option v-for="d in departmentOptions" :key="d.id" :value="d.id">{{ d.name }}</option>
+                <option v-for="d in (departmentOptions || [])" :key="d?.id" :value="d?.id">{{ d?.name }}</option>
               </select>
             </div>
           </div>
@@ -125,12 +125,12 @@
           </div>
           <div class="modal-body">
             <p class="delete-confirm-text">
-              Yakin ingin menghapus jabatan <strong>{{ deleteTarget?.title }}</strong>?
+              Yakin ingin menghapus jabatan <strong>{{ deleteTargetName }}</strong>?
             </p>
           </div>
           <div class="modal-footer">
             <button class="btn-cancel" @click="showDeleteModal = false">Batal</button>
-            <button class="btn-danger" @click="deleteData" :disabled="isDeleting">
+            <button class="btn-danger" @click="executeDelete" :disabled="isDeleting">
               {{ isDeleting ? 'Menghapus...' : 'Hapus' }}
             </button>
           </div>
@@ -175,19 +175,16 @@ import { useToast } from '@/composables/useToast'
 const activeNav = ref('jabatan')
 
 const { toasts, removeToast } = useToast()
-const showModal = ref(false)
 const isEditMode = ref(false)
 const editingId = ref<number | null>(null)
-const deleteTarget = ref<JabatanListItem | null>(null)
-const showDeleteModal = ref(false)
 const form = ref<JabatanForm>({
   title: '',
   department_id: null,
 })
 
 const {
-  // jabatanList,
   departmentOptions,
+  loadDepartmentOptions,
   currentPage,
   totalPages,
   paginatedData,
@@ -195,40 +192,36 @@ const {
   getDepartmentName,
 } = useJabatanList()
 
-const { isSaving: isCreating, createJabatan } = useJabatanCreate()
+const { 
+  isSaving: isCreating, 
+  createJabatan,
+  showModal,
+  openModal,
+  closeModal,
+} = useJabatanCreate(loadData)
+
 const { isSaving: isUpdating, updateJabatan } = useJabatanEdit()
 
 const { 
   isDeleting, 
-  deleteItem 
-} = useDeleteJabatan()
+  executeDelete,
+  confirmDelete,
+  deleteTarget,
+  deleteTargetName,
+  showDeleteModal,
+} = useDeleteJabatan(loadData)
 
 const isSaving = computed(() => isCreating.value || isUpdating.value)
 
-const openAddModal = () => {
-  showModal.value = true
-  isEditMode.value = false
-  editingId.value = null
-  form.value = {
-    title: '',
-    department_id: null,
-  }
-}
-
-const openEditModal = (item: JabatanListItem) => {
-  showModal.value = true
-  isEditMode.value = true
-  editingId.value = item.id
+const openEditModal = async (item: JabatanListItem) => {
+  await loadDepartmentOptions();
+  openModal();
+  isEditMode.value = true;
+  editingId.value = item.id;
   form.value = {
     title: item.title,
     department_id: item.department_id,
-  }
-}
-
-const closeModal = () => {
-  showModal.value = false
-  isEditMode.value = false
-  editingId.value = null
+  };
 }
 
 const saveData = async () => {
@@ -246,25 +239,6 @@ const saveData = async () => {
     const created = await createJabatan(payload)
     if (!created) return
   }
-
-  closeModal()
-  await loadData()
-}
-
-const confirmDelete = (item: JabatanListItem) => {
-  deleteTarget.value = item
-  showDeleteModal.value = true
-}
-
-const deleteData = async () => {
-  if (!deleteTarget.value) return
-
-  const success = await deleteItem(deleteTarget.value.id)
-  if (!success) return
-
-  showDeleteModal.value = false
-  deleteTarget.value = null
-  await loadData()
 }
 
 const handleLogout = () => {
@@ -273,7 +247,8 @@ const handleLogout = () => {
 }
 
 onMounted(() => {
-  loadData()
+  loadData();
+  loadDepartmentOptions?.();
 })
 </script>
 

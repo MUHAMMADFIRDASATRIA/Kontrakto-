@@ -131,7 +131,7 @@
                     <label class="field-label">Jenis Kelamin <span class="required">*</span></label>
                     <div class="radio-group">
                       <label class="radio-option" :class="{ 'radio-option--active': form.jenisKelamin === 'Laki-laki' }">
-                        <input type="radio" v-model="form.jenisKelamin" value="Laki-laki" class="radio-input"/>
+                        <input type="radio" v-model="form.jenisKelamin" value="male" class="radio-input"/>
                         <div class="radio-dot"></div>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <circle cx="10" cy="10" r="6"/><line x1="14.5" y1="14.5" x2="20" y2="20"/>
@@ -140,7 +140,7 @@
                         Laki-laki
                       </label>
                       <label class="radio-option" :class="{ 'radio-option--active': form.jenisKelamin === 'Perempuan' }">
-                        <input type="radio" v-model="form.jenisKelamin" value="Perempuan" class="radio-input"/>
+                        <input type="radio" v-model="form.jenisKelamin" value="female" class="radio-input"/>
                         <div class="radio-dot"></div>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <circle cx="12" cy="8" r="6"/><line x1="12" y1="14" x2="12" y2="20"/>
@@ -610,6 +610,7 @@ const {
   loadData,
   resetFormData,
   saveData,
+  mapFormToPayload,
   handleLogout,
 } = useCreateKaryawan()
 
@@ -703,10 +704,6 @@ watch(() => form.departemen, () => {
   if (!exists) form.jabatan = ''
 })
 
-onMounted(() => {
-  initializeForm()
-})
-
 async function initializeForm(): Promise<void> {
   await loadData()
 
@@ -764,19 +761,6 @@ function nextStep(): void {
   if (validateStep(currentStep.value)) currentStep.value++
 }
 
-function mapGender(value: string): 'male' | 'female' | '' {
-  if (value === 'Laki-laki') return 'male'
-  if (value === 'Perempuan') return 'female'
-  return ''
-}
-
-function mapMaritalStatus(value: string): 'single' | 'married' | 'divorced' | '' {
-  if (value === 'Belum Menikah') return 'single'
-  if (value === 'Menikah') return 'married'
-  if (value === 'Cerai') return 'divorced'
-  return ''
-}
-
 function mapGenderLabel(value: string): 'Laki-laki' | 'Perempuan' | '' {
   if (value === 'male') return 'Laki-laki'
   if (value === 'female') return 'Perempuan'
@@ -793,27 +777,12 @@ function mapMaritalStatusLabel(value: string): 'Belum Menikah' | 'Menikah' | 'Ce
 async function handleSubmit(): Promise<void> {
   if (!validateStep(3)) return
 
-  formData.value = {
-    name: form.namaLengkap.trim(),
-    email: form.email.trim(),
-    phone: form.telp.trim(),
-    address: form.alamat.trim(),
-    gender: mapGender(form.jenisKelamin),
-    location_of_birth: '',
-    agama: form.agama,
-    marital_status: mapMaritalStatus(form.statusPernikahan),
-    date_of_birth: form.tanggalLahir,
-    education: form.pendidikan,
-    position_id: Number(form.jabatan),
-    department_id: Number(form.departemen),
-  }
-
   if (isEditMode.value && editEmployeeId.value) {
-    await updateById(editEmployeeId.value, formData.value)
+    await updateById(editEmployeeId.value, mapFormToPayload(form))
     return
   }
 
-  await saveData()
+  await saveData(form)
 }
 
 function handleBatal(): void {
@@ -854,6 +823,10 @@ function onSupportingDocChange(e: Event): void {
   const file = (e.target as HTMLInputElement).files?.[0] ?? null
   supportingDoc.value = file
 }
+
+onMounted(() => {
+  initializeForm();
+})
 </script>
 
 <style scoped>

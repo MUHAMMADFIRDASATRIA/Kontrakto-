@@ -17,7 +17,7 @@
         <!-- Page Header -->
         <div class="page-header">
           <h1 class="page-title">Kelola Departemen</h1>
-          <button class="btn-add" @click="openAddModal">
+          <button class="btn-add" @click="openModal">
             Tambah Departemen
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </button>
@@ -59,7 +59,7 @@
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                       Edit
                     </button>
-                    <button class="btn-delete" @click="confirmDelete(item)">
+                    <button class="btn-delete" @click="confirmDelete(item.id, item.name)">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                     </button>
                   </div>
@@ -142,7 +142,7 @@
             </div>
             <div class="modal-footer">
               <button class="btn-cancel" @click="showDeleteModal = false">Batal</button>
-              <button class="btn-danger" @click="deleteData" :disabled="isDeleting">
+              <button class="btn-danger" @click="executeDelete" :disabled="isDeleting">
                 <span v-if="isDeleting" class="btn-spinner"></span>
                 {{ isDeleting ? 'Menghapus...' : 'Hapus' }}
               </button>
@@ -190,35 +190,38 @@ import { useToast } from '@/composables/useToast'
 const activeNav = ref('departemen')
 
 const { toasts, removeToast } = useToast()
-const showModal = ref(false)
 const isEditing = ref(false)
 const editingId = ref<number | null>(null)
-const showDeleteModal = ref(false)
-const deleteTarget = ref<number | null>(null)
-const deleteTargetName = ref('')
 const form = ref<DepartmentForm>({ name: '' })
 
 const {
   items: departemenList,
-    isLoading,
-    loadData,
-    currentPage,
-    perPage,
-    totalPages,
-    paginatedData,
+  isLoading,
+  loadData,
+  currentPage,
+  totalPages,
+  paginatedData,
 } = useDepartmentList()
 
-const { isSaving: isCreating, createDepartment } = useDepartmentCreate()
-const { isSaving: isUpdating, updateDepartment } = useDepartmentEdit()
-const { isDeleting, deleteItem } = useDeleteDepartment()
-const isSaving = computed(() => isCreating.value || isUpdating.value)
+const { 
+  isSaving: isCreating, 
+  createDepartment,
+  showModal,
+  openModal,
+  closeModal,
+} = useDepartmentCreate(loadData)
 
-const openAddModal = () => {
-  isEditing.value = false
-  editingId.value = null
-  form.value = { name: '' }
-  showModal.value = true
-}
+const { isSaving: isUpdating, updateDepartment } = useDepartmentEdit()
+const { 
+  isDeleting, 
+  executeDelete,
+  confirmDelete,
+  deleteTarget,
+  deleteTargetName,
+  showDeleteModal,
+ } = useDeleteDepartment(loadData)
+
+const isSaving = computed(() => isCreating.value || isUpdating.value)
 
 const openEditModal = (item: DepartmentListItem) => {
   isEditing.value = true
@@ -227,17 +230,15 @@ const openEditModal = (item: DepartmentListItem) => {
   showModal.value = true
 }
 
-const closeModal = () => {
-  showModal.value = false
-}
-
 const saveData = async () => {
-  if (!form.value.name.trim()) {
+  const name = form.value.name.trim()
+
+  if (!name) {
     window.alert('Nama departemen tidak boleh kosong')
     return
   }
 
-  const payload: DepartmentForm = { name: form.value.name.trim() }
+  const payload: DepartmentForm = { name }
 
   if (isEditing.value && editingId.value !== null) {
     const success = await updateDepartment(editingId.value, payload)
@@ -246,25 +247,6 @@ const saveData = async () => {
     const created = await createDepartment(payload)
     if (!created) return
   }
-
-  showModal.value = false
-  await loadData()
-}
-
-const confirmDelete = (item: DepartmentListItem) => {
-  deleteTarget.value = item.id
-  deleteTargetName.value = item.name
-  showDeleteModal.value = true
-}
-
-const deleteData = async () => {
-  if (deleteTarget.value === null) return
-
-  const success = await deleteItem(deleteTarget.value)
-  if (!success) return
-
-  showDeleteModal.value = false
-  await loadData()
 }
 
 const handleLogout = () => {
@@ -272,9 +254,7 @@ const handleLogout = () => {
   window.location.href = '/'
 }
 
-onMounted(() => {
-  loadData()
-})
+onMounted(loadData)
 </script>
 
 <style scoped>
